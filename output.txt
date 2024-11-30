@@ -1,0 +1,62 @@
+.
+├── README.md
+├── next-env.d.ts
+├── next.config.ts
+├── output.txt
+├── package.json
+├── postcss.config.mjs
+├── public
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── src
+│   ├── app
+│   │   ├── (auth)
+│   │   │   ├── login
+│   │   │   │   └── page.tsx
+│   │   │   └── register
+│   │   │       └── page.tsx
+│   │   ├── dashboard
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   └── templates
+│   │   │       ├── [templateId]
+│   │   │       │   ├── edit
+│   │   │       │   └── page.tsx
+│   │   │       ├── new
+│   │   │       │   └── page.tsx
+│   │   │       └── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── fonts
+│   │   │   ├── GeistMonoVF.woff
+│   │   │   └── GeistVF.woff
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── auth
+│   │   │   ├── LoginForm.tsx
+│   │   │   └── RegisterForm.tsx
+│   │   └── templates
+│   │       ├── CreateTemplateForm.tsx
+│   │       ├── PreviewDialog.tsx
+│   │       └── PreviewPane.tsx
+│   ├── context
+│   │   ├── AuthContext.tsx
+│   │   └── TemplateContext.tsx
+│   ├── lib
+│   │   ├── api
+│   │   │   ├── auth.ts
+│   │   │   └── template.ts
+│   │   └── validations
+│   │       └── template.ts
+│   └── types
+│       ├── auth.ts
+│       └── template.ts
+├── tailwind.config.ts
+├── tsconfig.json
+└── yarn.lock
+
+21 directories, 39 files
