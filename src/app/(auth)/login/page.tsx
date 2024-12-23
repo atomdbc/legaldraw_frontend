@@ -20,7 +20,7 @@ export default function LoginPage() {
         <div className="flex-grow flex flex-col justify-center max-w-[480px]">
           <h1 className="text-4xl font-semibold mb-4">Transform your legal workflow</h1>
           <p className="text-zinc-400 text-lg mb-8">
-            Join thousands of legal professionals using AI to draft, review, and manage legal documents with confidence.
+            Join thousands of legal professionals  using AI to draft, review, and manage legal documents with confidence.
           </p>
           
           <div className="space-y-8">

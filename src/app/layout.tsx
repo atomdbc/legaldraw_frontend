@@ -1,8 +1,15 @@
 // src/app/layout.tsx
-import { AuthProvider } from '@/context/AuthContext';
-import { TemplateProvider } from '@/context/TemplateContext';
+import { Inter } from 'next/font/google'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { AuthProvider } from '@/context/AuthContext'
 import './globals.css'
 
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata = {
+  title: 'LegalDraw AI',
+  description: 'Generate legal documents easily',
+}
 
 export default function RootLayout({
   children,
@@ -11,13 +18,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <AuthProvider>
-          <TemplateProvider>
-          {children}
-          </TemplateProvider>
-        </AuthProvider>
+      <body className={inter.className}>
+        <TooltipProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </TooltipProvider>
       </body>
     </html>
-  );
+  )
 }

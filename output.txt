@@ -1,5 +1,6 @@
 .
 ├── README.md
+├── components.json
 ├── next-env.d.ts
 ├── next.config.ts
 ├── output.txt
@@ -19,44 +20,135 @@
 │   │   │   └── register
 │   │   │       └── page.tsx
 │   │   ├── dashboard
+│   │   │   ├── DocumentPreview.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── documents
+│   │   │   ├── [id]
+│   │   │   │   └── page.tsx
+│   │   │   ├── create
+│   │   │   │   ├── [type]
+│   │   │   │   │   ├── details
+│   │   │   │   │   │   ├── DocumentDetailsClient.tsx
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── parties
+│   │   │   │   │   │   ├── PartyInformationClient.tsx
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   └── preview
+│   │   │   │   │       ├── PreviewClient.tsx
+│   │   │   │   │       └── page.tsx
+│   │   │   │   └── page.tsx
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx
-│   │   │   └── templates
-│   │   │       ├── [templateId]
-│   │   │       │   ├── edit
-│   │   │       │   └── page.tsx
-│   │   │       ├── new
-│   │   │       │   └── page.tsx
-│   │   │       └── page.tsx
+│   │   │   └── preview
+│   │   │       └── [id]
+│   │   │           └── page.tsx
 │   │   ├── favicon.ico
 │   │   ├── fonts
 │   │   │   ├── GeistMonoVF.woff
 │   │   │   └── GeistVF.woff
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   └── page.tsx
+│   │   ├── page.tsx
+│   │   └── settings
+│   │       ├── layout.tsx
+│   │       └── page.tsx
 │   ├── components
 │   │   ├── auth
 │   │   │   ├── LoginForm.tsx
-│   │   │   └── RegisterForm.tsx
-│   │   └── templates
-│   │       ├── CreateTemplateForm.tsx
-│   │       ├── PreviewDialog.tsx
-│   │       └── PreviewPane.tsx
+│   │   │   ├── RegisterForm.tsx
+│   │   │   └── Testimonials.tsx
+│   │   ├── dashboard
+│   │   │   ├── DashboardNav.tsx
+│   │   │   ├── DashboardShell.tsx
+│   │   │   ├── OverviewStats.tsx
+│   │   │   └── panels
+│   │   │       ├── ActivityFeed.tsx
+│   │   │       ├── DocumentList.tsx
+│   │   │       └── TemplateGrid.tsx
+│   │   ├── documents
+│   │   │   ├── forms
+│   │   │   │   ├── AddressForm.tsx
+│   │   │   │   ├── PartyDetailsForm.tsx
+│   │   │   │   ├── PartyForm.tsx
+│   │   │   │   ├── PartyList.tsx
+│   │   │   │   └── VariableForm.tsx
+│   │   │   ├── preview
+│   │   │   │   └── DocumentPreviewPanel.tsx
+│   │   │   ├── ui
+│   │   │   │   ├── PreviewFrame.tsx
+│   │   │   │   └── WizardSteps.tsx
+│   │   │   └── wizard
+│   │   │       ├── DocumentPreview.tsx
+│   │   │       ├── DocumentReviewModal.tsx
+│   │   │       ├── DocumentTypeSelector.tsx
+│   │   │       ├── DocumentVariables.tsx
+│   │   │       ├── DocumentWizard.tsx
+│   │   │       └── PartyInformation.tsx
+│   │   └── ui
+│   │       ├── alert-dialog.tsx
+│   │       ├── alert.tsx
+│   │       ├── avatar.tsx
+│   │       ├── badge.tsx
+│   │       ├── button.tsx
+│   │       ├── calendar.tsx
+│   │       ├── card.tsx
+│   │       ├── combobox.tsx
+│   │       ├── command.tsx
+│   │       ├── dialog.tsx
+│   │       ├── dropdown-menu.tsx
+│   │       ├── form.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       ├── popover.tsx
+│   │       ├── resizable.tsx
+│   │       ├── scroll-area.tsx
+│   │       ├── select.tsx
+│   │       ├── separator.tsx
+│   │       ├── sheet.tsx
+│   │       ├── skeleton.tsx
+│   │       ├── switch.tsx
+│   │       ├── tabs.tsx
+│   │       ├── textarea.tsx
+│   │       ├── toast.tsx
+│   │       ├── toaster.tsx
+│   │       └── tooltip.tsx
 │   ├── context
-│   │   ├── AuthContext.tsx
-│   │   └── TemplateContext.tsx
+│   │   └── AuthContext.tsx
+│   ├── hooks
+│   │   ├── use-media-query.ts
+│   │   ├── use-toast.ts
+│   │   ├── useDocument.ts
+│   │   ├── useDocumentProgress.ts
+│   │   └── useWizardNavigation.ts
 │   ├── lib
 │   │   ├── api
 │   │   │   ├── auth.ts
-│   │   │   └── template.ts
+│   │   │   ├── document.ts
+│   │   │   └── middleware.ts
+│   │   ├── data
+│   │   │   └── locations.ts
+│   │   ├── presets
+│   │   │   └── templates.ts
+│   │   ├── utils
+│   │   │   ├── documentTypes.ts
+│   │   │   └── form.ts
+│   │   ├── utils.ts
 │   │   └── validations
+│   │       ├── document.ts
+│   │       ├── party.ts
 │   │       └── template.ts
+│   ├── middleware.ts
+│   ├── services
+│   │   └── partyService.ts
 │   └── types
 │       ├── auth.ts
+│       ├── document.ts
+│       ├── party.ts
 │       └── template.ts
 ├── tailwind.config.ts
 ├── tsconfig.json
 └── yarn.lock
 
-21 directories, 39 files
+39 directories, 113 files
