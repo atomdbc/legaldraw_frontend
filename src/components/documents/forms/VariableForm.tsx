@@ -42,6 +42,31 @@ const FIELD_SUGGESTIONS = {
     "Product specifications, designs, and technical documentation",
     "Financial information and business strategies",
     "Customer data and market research"
+  ],
+  confidential_info_types: [
+    "Source code, algorithms, customer data, business processes",
+    "Product specifications, designs, and technical documentation",
+    "Financial data, business strategies, and trade secrets",
+    "Marketing plans, customer lists, and pricing information"
+  ],
+  industry_type: [
+    "Software and Technology",
+    "Financial Services",
+    "Healthcare and Biotechnology",
+    "Manufacturing and Engineering",
+    "Professional Services"
+  ],
+  protection_requirements: [
+    "Encryption, secure storage, and access logging",
+    "Physical and digital security measures",
+    "Access restrictions and confidentiality agreements",
+    "Data masking and secure transmission protocols"
+  ],
+  permitted_uses: [
+    "Evaluation and development of joint project",
+    "Assessment of potential business opportunity",
+    "Research and development collaboration",
+    "Due diligence and business analysis"
   ]
 };
 
@@ -69,13 +94,42 @@ const NDA_FIELDS: FieldConfig[] = [
     aiAssisted: true
   },
   {
-    id: 'confidentiality_scope',
-    key: 'confidentiality_scope',
-    label: 'Scope of Confidential Information',
+    id: 'confidential_info_types',
+    key: 'confidential_info_types',
+    label: 'Confidential Information Types',
     type: 'select',
-    description: 'Define what information is considered confidential',
+    description: 'Specify the types of confidential information covered',
     required: true,
-    suggestions: FIELD_SUGGESTIONS.confidentiality_scope,
+    suggestions: FIELD_SUGGESTIONS.confidential_info_types,
+    aiAssisted: true
+  },
+  {
+    id: 'industry_type',
+    key: 'industry_type',
+    label: 'Industry Type',
+    type: 'select',
+    description: 'Select the primary industry sector',
+    required: true,
+    suggestions: FIELD_SUGGESTIONS.industry_type
+  },
+  {
+    id: 'protection_requirements',
+    key: 'protection_requirements',
+    label: 'Protection Requirements',
+    type: 'select',
+    description: 'Specify security and protection measures',
+    required: true,
+    suggestions: FIELD_SUGGESTIONS.protection_requirements,
+    aiAssisted: true
+  },
+  {
+    id: 'permitted_uses',
+    key: 'permitted_uses',
+    label: 'Permitted Uses',
+    type: 'select',
+    description: 'Define allowed uses of confidential information',
+    required: true,
+    suggestions: FIELD_SUGGESTIONS.permitted_uses,
     aiAssisted: true
   },
   {
@@ -88,23 +142,24 @@ const NDA_FIELDS: FieldConfig[] = [
     suggestions: FIELD_SUGGESTIONS.duration
   },
   {
+    id: 'governing_law',
+    key: 'governing_law',
+    label: 'Governing Law',
+    type: 'select',
+    description: 'Which jurisdiction\'s laws will govern this agreement?',
+    required: true,
+    suggestions: FIELD_SUGGESTIONS.jurisdiction
+  },
+  {
     id: 'effective_date',
     key: 'effective_date',
     label: 'Effective Date',
     type: 'date',
     description: 'When does this agreement take effect?',
     required: true
-  },
-  {
-    id: 'jurisdiction',
-    key: 'jurisdiction',
-    label: 'Governing Law',
-    type: 'select',
-    description: 'Which jurisdiction\'s laws will govern this agreement?',
-    required: true,
-    suggestions: FIELD_SUGGESTIONS.jurisdiction
   }
 ];
+
 
 interface DocumentVariablesProps {
   documentType: string;
@@ -157,9 +212,12 @@ export function DocumentVariables({
   const handleQuickFill = () => {
     const suggestedValues = {
       purpose: FIELD_SUGGESTIONS.purpose[0],
-      confidentiality_scope: FIELD_SUGGESTIONS.confidentiality_scope[0],
+      confidential_info_types: FIELD_SUGGESTIONS.confidential_info_types[0],
+      industry_type: FIELD_SUGGESTIONS.industry_type[0],
+      protection_requirements: FIELD_SUGGESTIONS.protection_requirements[0],
+      permitted_uses: FIELD_SUGGESTIONS.permitted_uses[0],
       duration: FIELD_SUGGESTIONS.duration[0],
-      jurisdiction: FIELD_SUGGESTIONS.jurisdiction[0],
+      governing_law: FIELD_SUGGESTIONS.jurisdiction[0],
       effective_date: new Date().toISOString()
     };
 

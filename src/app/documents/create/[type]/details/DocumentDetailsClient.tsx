@@ -10,7 +10,7 @@ import { useDocumentProgress } from "@/hooks/useDocumentProgress";
 import { Card } from '@/components/ui/card';
 import { DOCUMENT_TYPES } from '@/lib/utils/documentTypes';
 import { useWizardNavigation } from '@/hooks/useWizardNavigation';
-import { NDAVariables } from "@/types/document";
+import { DocumentVariables as Variables } from "@/types/document";
 import { Dialog } from '@radix-ui/react-dialog';
 
 interface DocumentDetailsClientProps {
@@ -21,11 +21,10 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
   const router = useRouter();
   const { toast } = useToast();
   const { data: progressData, updateProgress } = useDocumentProgress();
-  const { navigateNext, navigateBack } = useWizardNavigation(initialType);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isValid, setIsValid] = useState(false);
-  const [variables, setVariables] = useState<Partial<NDAVariables>>({});
+  const [variables, setVariables] = useState<Partial<Variables>>({});
   const [hasParties, setHasParties] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showReview, setShowReview] = useState(false);
@@ -61,7 +60,7 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
     loadInitialData();
   }, [progressData, initialType, router]);
 
-  const handleVariablesChange = (newVariables: Partial<NDAVariables>) => {
+  const handleVariablesChange = (newVariables: Partial<Variables>) => {
     setVariables(newVariables);
   };
 
@@ -137,17 +136,17 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
       </DocumentWizard>
 
       <Dialog open={showReview} onOpenChange={setShowReview}>
-  <DocumentReviewModal
-    isOpen={showReview}
-    onClose={() => setShowReview(false)}
-    documentType={initialType as any}
-    documentData={{
-      parties: progressData?.data?.parties || [],
-      variables: variables
-    }}
-    isLoading={isSaving}
-  />
-</Dialog>
+        <DocumentReviewModal
+          isOpen={showReview}
+          onClose={() => setShowReview(false)}
+          documentType={initialType as any}
+          documentData={{
+            parties: progressData?.data?.parties || [],
+            variables: variables
+          }}
+          isLoading={isSaving}
+        />
+      </Dialog>
     </>
   );
 }

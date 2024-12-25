@@ -32,8 +32,6 @@ export function DocumentWizard(props: DocumentWizardProps) {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const { navigateNext, navigateBack } = useWizardNavigation(documentType);
-
 
   const currentStep = wizardSteps[currentStepIndex]?.id as 'type' | 'parties' | 'details' | 'preview';
   const isLastStep = currentStepIndex === wizardSteps.length - 1;
@@ -44,14 +42,10 @@ export function DocumentWizard(props: DocumentWizardProps) {
     setIsProcessing(true);
 
     try {
-      const isValid = await onNext();
-      if (!isValid) return;
-
-      if (currentStep === 'details') return;
-
-      const nextRoute = await navigateNext(currentStep);
-      if (nextRoute) {
-        await router.push(nextRoute);
+      const shouldProceed = await onNext();
+      if (!shouldProceed) {
+        setIsProcessing(false);
+        return;
       }
     } catch (error) {
       console.error('Navigation error:', error);
@@ -59,20 +53,16 @@ export function DocumentWizard(props: DocumentWizardProps) {
         variant: "destructive",
         description: "Failed to proceed. Please try again."
       });
-    } finally {
       setIsProcessing(false);
+      return;
     }
+
+    setIsProcessing(false);
   };
 
   const handleBack = () => {
     if (onBack) {
       onBack();
-      return;
-    }
-
-    const prevRoute = navigateBack(currentStep);
-    if (prevRoute) {
-      router.push(prevRoute);
     }
   };
 
@@ -116,27 +106,25 @@ export function DocumentWizard(props: DocumentWizardProps) {
                     Save Draft
                   </Button>
                 </DialogTrigger>
-                {showExitDialog && (
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Save as Draft?</DialogTitle>
-                    </DialogHeader>
-                    <p className="text-muted-foreground">
-                      Your progress will be saved and you can continue later.
-                    </p>
-                    <div className="flex justify-end gap-3 mt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowExitDialog(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button onClick={handleSaveAndExit}>
-                        Save & Exit
-                      </Button>
-                    </div>
-                  </DialogContent>
-                )}
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Save as Draft?</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-muted-foreground">
+                    Your progress will be saved and you can continue later.
+                  </p>
+                  <div className="flex justify-end gap-3 mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowExitDialog(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveAndExit}>
+                      Save & Exit
+                    </Button>
+                  </div>
+                </DialogContent>
               </Dialog>
 
               <Button

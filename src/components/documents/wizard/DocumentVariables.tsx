@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { NDAVariables } from "@/types/document";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,69 +10,23 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CalendarIcon, Sparkles, AlertCircle, Wand2 } from "lucide-react";
+import { CalendarIcon, AlertCircle, Wand2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Alert } from "@/components/ui/alert";
+import { 
+  DocumentVariables, 
+  DocumentField, 
+  DOCUMENT_FIELDS_CONFIG, 
+  PREDEFINED_VALUES 
+} from "@/types/document";
 
 interface DocumentVariablesProps {
   documentType: string;
-  variables: Partial<NDAVariables>;
-  onChange: (variables: Partial<NDAVariables>) => void;
+  variables: Partial<DocumentVariables>;
+  onChange: (variables: Partial<DocumentVariables>) => void;
   onValidationChange?: (isValid: boolean) => void;
 }
-
-const PREDEFINED_VALUES = {
-  purpose: 'For the purpose of evaluating potential business opportunities and discussing possible collaboration.',
-  duration: 'one (1) year',
-  governing_law: 'State of Delaware',
-  effective_date: new Date().toISOString()
-};
-
-const documentFields: { [key: string]: { id: string; key: string; label: string; type: string; description: string; required: boolean; placeholder?: string; options?: string[] }[] } = {
-  nda: [
-    {
-      id: 'purpose',
-      key: 'purpose',
-      label: 'Purpose of Agreement',
-      type: 'textarea' as const,
-      description: 'Describe the purpose for sharing confidential information',
-      required: true,
-      placeholder: 'e.g., For the purpose of evaluating potential business opportunities...'
-    },
-    {
-      id: 'duration',
-      key: 'duration',
-      label: 'Duration',
-      type: 'select' as const,
-      description: 'How long will this agreement be in effect?',
-      required: true,
-      options: [
-        'one (1) year',
-        'two (2) years',
-        'three (3) years',
-        'five (5) years'
-      ]
-    },
-    {
-      id: 'governing_law',
-      key: 'governing_law',
-      label: 'Governing Law',
-      type: 'text' as const,
-      description: 'Which jurisdiction\'s laws will govern this agreement?',
-      required: true,
-      placeholder: 'e.g., State of Delaware'
-    },
-    {
-      id: 'effective_date',
-      key: 'effective_date',
-      label: 'Effective Date',
-      type: 'date' as const,
-      description: 'When does this agreement take effect?',
-      required: true
-    }
-  ]
-};
 
 export function DocumentVariables({
   documentType,
@@ -82,21 +35,22 @@ export function DocumentVariables({
   onValidationChange
 }: DocumentVariablesProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const fields = documentFields[documentType.toLowerCase()] || [];
+  const fields = DOCUMENT_FIELDS_CONFIG[documentType.toLowerCase()] || [];
 
   const validateFields = useCallback(() => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
 
     fields.forEach(field => {
-      const value = variables[field.key as keyof NDAVariables];
-      if (field.required && (!value || value === '')) {
-        newErrors[field.id] = `${field.label} is required`;
-        isValid = false;
+      if (field.required) {
+        const value = variables[field.key as keyof DocumentVariables];
+        if (!value || value === '') {
+          newErrors[field.id] = `${field.label} is required`;
+          isValid = false;
+        }
       }
     });
 
-    console.log('Validation state:', { isValid, fields: variables });
     setErrors(newErrors);
     onValidationChange?.(isValid);
     return isValid;
@@ -107,27 +61,27 @@ export function DocumentVariables({
   }, [validateFields]);
 
   const handleQuickFill = () => {
-    onChange(PREDEFINED_VALUES);
+    const docType = documentType.toLowerCase() as keyof typeof PREDEFINED_VALUES;
+    const defaultValues = PREDEFINED_VALUES[docType];
+    if (defaultValues) {
+      onChange(defaultValues);
+    }
   };
 
-  const handleChange = (field: typeof fields[0], value: any) => {
+  const handleChange = (field: DocumentField, value: any) => {
     const formattedValue = field.type === 'date' && value instanceof Date
       ? value.toISOString()
       : value;
 
-    const newVariables = {
+    onChange({
       ...variables,
       [field.key]: formattedValue
-    };
-
-    onChange(newVariables);
-    validateFields();
+    });
   };
 
-
-  const renderField = (field: typeof fields[0]) => {
+  const renderField = (field: DocumentField) => {
     const error = errors[field.id];
-    const value = variables[field.key as keyof NDAVariables];
+    const value = variables[field.key as keyof DocumentVariables];
 
     const commonProps = {
       id: field.id,
@@ -139,7 +93,7 @@ export function DocumentVariables({
     switch (field.type) {
       case 'textarea':
         return (
-          <div key={field.id} className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor={field.id} className="flex items-center gap-2">
               {field.label}
               {field.required && <span className="text-destructive">*</span>}
@@ -158,7 +112,7 @@ export function DocumentVariables({
 
       case 'date':
         return (
-          <div key={field.id} className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor={field.id} className="flex items-center gap-2">
               {field.label}
               {field.required && <span className="text-destructive">*</span>}
@@ -194,7 +148,7 @@ export function DocumentVariables({
 
       case 'select':
         return (
-          <div key={field.id} className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor={field.id} className="flex items-center gap-2">
               {field.label}
               {field.required && <span className="text-destructive">*</span>}
@@ -220,73 +174,70 @@ export function DocumentVariables({
           </div>
         );
 
-        default:
-          return (
-            <div key={field.id} className="space-y-2">
-              <Label htmlFor={field.id} className="flex items-center gap-2">
-                {field.label}
-                {field.required && <span className="text-destructive">*</span>}
-              </Label>
-              {field.description && (
-                <p className="text-sm text-muted-foreground">{field.description}</p>
-              )}
-              <Input
-                {...commonProps}
-                type={field.type}
-                value={value as string || ''}
-                onChange={(e) => handleChange(field, e.target.value)}
-                placeholder={field.placeholder}
-              />
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
-            </div>
-          );
-      }
-    };
-  
-    return (
-      <Card className="p-6">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Document Variables</h3>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  onClick={handleQuickFill}
-                  className="gap-2"
-                >
-                  <Wand2 className="h-4 w-4" />
-                  Quick Fill
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Auto-fill with suggested values</p>
-              </TooltipContent>
-            </Tooltip>
+      default:
+        return (
+          <div className="space-y-2">
+            <Label htmlFor={field.id} className="flex items-center gap-2">
+              {field.label}
+              {field.required && <span className="text-destructive">*</span>}
+            </Label>
+            <Input
+              {...commonProps}
+              type="text"
+              value={value as string || ''}
+              onChange={(e) => handleChange(field, e.target.value)}
+              placeholder={field.placeholder}
+            />
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
           </div>
-  
-          {fields.map(field => (
-            <div key={field.id}>
-              {renderField(field)}
-            </div>
-          ))}
-  
-          {Object.keys(errors).length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <div className="ml-2">
-                <h4 className="font-medium">Please fix the following errors:</h4>
-                <ul className="mt-2 list-disc pl-5 text-sm">
-                  {Object.values(errors).map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </div>
-            </Alert>
-          )}
+        );
+    }
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Document Variables</h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                onClick={handleQuickFill}
+                className="gap-2"
+              >
+                <Wand2 className="h-4 w-4" />
+                Quick Fill
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Auto-fill with suggested values</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
-      </Card>
-    );
-  }
+
+        {fields.map(field => (
+          <div key={field.id}>
+            {renderField(field)}
+          </div>
+        ))}
+
+        {Object.keys(errors).length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <div className="ml-2">
+              <h4 className="font-medium">Please fix the following errors:</h4>
+              <ul className="mt-2 list-disc pl-5 text-sm">
+                {Object.values(errors).map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          </Alert>
+        )}
+      </div>
+    </Card>
+  );
+}
