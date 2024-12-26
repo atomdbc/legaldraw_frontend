@@ -1,17 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import { DocumentWizard } from '@/components/documents/wizard/DocumentWizard';
 import { DocumentPreviewPanel } from '@/components/documents/preview/DocumentPreviewPanel';
-import { useDocumentProgress } from '@/hooks/useDocumentProgress';
+import { ShareModal } from '@/components/documents/preview/ShareModal';
 import { useToast } from '@/hooks/use-toast';
 import { useWizardNavigation } from '@/hooks/useWizardNavigation';
+import { useDocumentProgress } from '@/hooks/useDocumentProgress';
+import { useRouter } from 'next/navigation';
+import { documentApi } from '@/lib/api/document';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
 
 interface PreviewClientProps {
   documentType: string;
   documentId?: string;
 }
+
 
 export function PreviewClient({ documentType, documentId }: PreviewClientProps) {
   const router = useRouter();
@@ -19,24 +25,64 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
   const { data: progressData } = useDocumentProgress();
   const { navigateBack } = useWizardNavigation(documentType);
   const [isLoading, setIsLoading] = useState(true);
+  const [documentContent, setDocumentContent] = useState<any>(null);
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  
 
   useEffect(() => {
-    if (!progressData) return;
+    const loadDocument = async () => {
+      if (!documentId) {
+        setIsLoading(false);
+        return;
+      }
 
-    const hasValidData = (progressData?.data?.parties?.length ?? 0) >= 2 && 
-                        Object.keys(progressData?.data?.variables || {}).length > 0;
-                        
-    if (!hasValidData) {
-      toast({
-        variant: "destructive",
-        title: "Missing Information",
-        description: "Please complete previous steps first."
-      });
-      router.push(`/documents/create/${documentType}`);
+      try {
+        const doc = await documentApi.getDocumentContent(documentId);
+        setDocumentContent(doc);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load document content"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDocument();
+  }, [documentId, toast]);
+
+  useEffect(() => {
+    // Add style to iframe once loaded
+    const iframe = previewIframeRef.current;
+    if (iframe?.contentWindow) {
+      iframe.onload = () => {
+        const doc = iframe.contentDocument;
+        if (doc) {
+          // Add styles to ensure content fits and scrolls properly
+          const style = doc.createElement('style');
+          style.textContent = `
+            body {
+              margin: 0;
+              padding: 16px;
+              box-sizing: border-box;
+              max-width: 800px;
+              margin: 0 auto;
+              overflow-x: hidden !important;
+            }
+            .page {
+              width: 100% !important;
+              margin: 0 auto !important;
+              box-shadow: none !important;
+              padding: 0 !important;
+            }
+          `;
+          doc.head.appendChild(style);
+        }
+      };
     }
-
-    setIsLoading(false);
-  }, [progressData, documentType, router, toast]);
+  }, [documentContent]);
 
   const handleBack = () => {
     const prevRoute = navigateBack('preview');
@@ -45,19 +91,11 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
     }
   };
 
-  if (isLoading) {
-    return (
-      <DocumentWizard
-        currentStepIndex={3}
-        documentType={documentType}
-        allowNext={false}
-      >
-        <div className="flex items-center justify-center min-h-[600px]">
-          <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
-        </div>
-      </DocumentWizard>
-    );
-  }
+  const handleDownload = async () => {
+    // Download logic here
+    console.log("Downloading document...");
+  };
+
 
   return (
     <DocumentWizard
@@ -66,9 +104,34 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
       allowNext={false}
       documentType={documentType}
     >
-      <DocumentPreviewPanel 
-        documentData={progressData?.data}
-      />
+      <div className="h-full grid grid-cols-[160px_1fr] gap-2">
+        <DocumentPreviewPanel
+          content={documentContent?.content || progressData?.data?.content || ''}
+          onPageChange={(pageNumber) => console.log(`Page ${pageNumber}`)}
+          previewIframeRef={previewIframeRef}
+        />
+        <div className="flex flex-col">
+          <div className="flex items-center justify-end gap-2 mb-2">
+            <ShareModal documentId={documentId || ''} />
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+          <Card className="flex-1 h-full overflow-hidden bg-white">
+            <iframe
+              ref={previewIframeRef}
+              srcDoc={documentContent?.content || progressData?.data?.content}
+              className="w-full h-full border-0"
+              title="Document Preview"
+              style={{
+                display: 'block',
+                backgroundColor: 'white'
+              }}
+            />
+          </Card>
+        </div>
+      </div>
     </DocumentWizard>
   );
 }

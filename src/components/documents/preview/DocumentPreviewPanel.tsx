@@ -1,8 +1,6 @@
-// src/components/documents/preview/DocumentPreviewPanel.tsx
-
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -26,34 +24,27 @@ export function DocumentPreviewPanel({
 }: DocumentPreviewPanelProps) {
   const [pages, setPages] = useState<PageThumbnail[]>([]);
   const [selectedPage, setSelectedPage] = useState(1);
-  const thumbnailIframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Parse content into pages
   useEffect(() => {
     if (!content) return;
 
-    // Create temporary iframe to parse content
     const tempIframe = document.createElement('iframe');
     tempIframe.style.visibility = 'hidden';
     tempIframe.style.position = 'absolute';
     document.body.appendChild(tempIframe);
 
-    // Write content to iframe
     if (tempIframe.contentDocument) {
       tempIframe.contentDocument.write(content);
       tempIframe.contentDocument.close();
 
-      // Find all page divs
       const pageElements = tempIframe.contentDocument.querySelectorAll('.page');
-      const newPages: PageThumbnail[] = Array.from(pageElements).map((_, index) => ({
+      const newPages = Array.from(pageElements).map((_, index) => ({
         id: index + 1,
         title: `Page ${index + 1}`,
         selected: index === 0
       }));
 
       setPages(newPages);
-
-      // Cleanup
       document.body.removeChild(tempIframe);
     }
   }, [content]);
@@ -62,7 +53,6 @@ export function DocumentPreviewPanel({
     setSelectedPage(pageNumber);
     onPageChange?.(pageNumber);
 
-    // Scroll the preview to the selected page
     if (previewIframeRef.current?.contentDocument) {
       const pageElement = previewIframeRef.current.contentDocument
         .querySelector(`.page:nth-child(${pageNumber})`);
@@ -71,31 +61,29 @@ export function DocumentPreviewPanel({
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-muted/5">
       <ScrollArea className="h-full">
-        <div className="p-2 space-y-2">
+        <div className="p-1 space-y-1">
           {pages.map((page) => (
             <button
               key={page.id}
               onClick={() => handlePageClick(page.id)}
               className={cn(
-                "w-full text-left p-2 rounded-lg transition-colors",
-                "hover:bg-accent group relative",
+                "w-full text-left p-1 rounded transition-colors",
+                "hover:bg-accent/50 group relative",
                 selectedPage === page.id ? "bg-accent" : "bg-background"
               )}
             >
-              {/* Page Thumbnail */}
-              <div className="aspect-[8.5/11] w-full mb-2 rounded border bg-white shadow-sm overflow-hidden">
+              <div className="aspect-[8.5/11] w-full rounded border bg-background shadow-sm overflow-hidden">
                 <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                  Page {page.id}
+                  {page.id}
                 </div>
               </div>
               
-              {/* Page Title */}
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-medium">Page {page.id}</span>
+              <div className="flex items-center justify-between px-1 mt-1">
+                <span className="text-[10px] font-medium">Page {page.id}</span>
                 {selectedPage === page.id && (
-                  <span className="text-xs text-muted-foreground">Current</span>
+                  <span className="text-[8px] bg-primary/10 text-primary px-1 rounded">•</span>
                 )}
               </div>
             </button>
