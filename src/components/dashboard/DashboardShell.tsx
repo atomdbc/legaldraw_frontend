@@ -9,15 +9,14 @@ import {
   Bell,
   Search,
   User,
-  FileText,
   Settings,
   LayoutDashboard,
   LogOut,
   ChevronDown,
   Menu,
-  X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -43,24 +42,30 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export default function DashboardShell({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+const Logo = ({ collapsed = false }: { collapsed?: boolean }) => (
+  <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+    <div className="flex-shrink-0">
+      <svg className="w-8 h-8 text-zinc-900" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
+    {!collapsed && (
+      <span className="font-semibold text-lg text-zinc-900">LegalDraw</span>
+    )}
+  </div>
+);
+
+export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // Close mobile sidebar on route change
   useEffect(() => {
     setMobileSidebarOpen(false);
   }, [pathname]);
-
-  const handleSidebarToggle = () => {
-    setSidebarCollapsed(!isSidebarCollapsed);
-  };
 
   const NavigationContent = ({ isCollapsed }: { isCollapsed?: boolean }) => (
     <nav className="flex-1 space-y-1 px-2 py-4">
@@ -70,10 +75,10 @@ export default function DashboardShell({
             key={item.name}
             href={item.href}
             className={cn(
-              "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
               pathname === item.href
-                ? "bg-blue-50 text-blue-600"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                ? "bg-zinc-900 text-white"
+                : "text-zinc-700 hover:bg-zinc-100",
               isCollapsed ? "justify-center" : ""
             )}
           >
@@ -83,11 +88,9 @@ export default function DashboardShell({
         );
 
         return isCollapsed ? (
-          <Tooltip key={item.name} delayDuration={0}>
-            <TooltipTrigger asChild>
-              {NavLink}
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-white border shadow-sm">
+          <Tooltip key={item.name}>
+            <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
+            <TooltipContent side="right" className="border shadow-sm">
               {item.name}
             </TooltipContent>
           </Tooltip>
@@ -103,19 +106,19 @@ export default function DashboardShell({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className={cn(
-            "w-full gap-2",
+            "w-full gap-3",
             isCollapsed ? "justify-center px-2" : "justify-start"
           )}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 flex-shrink-0">
-              <User className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-900">
+              <User className="h-5 w-5" />
             </div>
             {!isCollapsed && (
               <div className="flex flex-1 items-center justify-between">
                 <div className="text-sm">
-                  <p className="font-medium">John Doe</p>
-                  <p className="text-xs text-muted-foreground">john@example.com</p>
+                  <p className="font-medium text-zinc-900">John Doe</p>
+                  <p className="text-xs text-zinc-500">john@example.com</p>
                 </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-4 w-4 text-zinc-500" />
               </div>
             )}
           </Button>
@@ -123,10 +126,11 @@ export default function DashboardShell({
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Profile</DropdownMenuItem>
-          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuItem>Profile Settings</DropdownMenuItem>
+          <DropdownMenuItem>Billing</DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem className="text-red-600">
-            <LogOut className="mr-2 h-4 w-4" /> Logout
+            <LogOut className="mr-2 h-4 w-4" /> Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -134,29 +138,20 @@ export default function DashboardShell({
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50">
+    <div className="flex min-h-screen bg-zinc-50">
       {/* Desktop Sidebar */}
-      <div
-        className={cn(
-          "hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300",
-          isSidebarCollapsed ? "lg:w-20" : "lg:w-64"
-        )}
-      >
-        <div className="flex flex-1 flex-col bg-white shadow-sm">
-          {/* Logo and Toggle */}
-          <div className="flex h-16 items-center gap-2 border-b px-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white flex-shrink-0">
-              <FileText className="h-5 w-5" />
-            </div>
-            {!isSidebarCollapsed && <span className="font-semibold">LegalDraw AI</span>}
+      <div className={cn(
+        "hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 bg-white border-r transition-all duration-300",
+        isSidebarCollapsed ? "lg:w-20" : "lg:w-64"
+      )}>
+        <div className="flex flex-1 flex-col">
+          <div className="flex h-16 items-center justify-between border-b px-4">
+            <Logo collapsed={isSidebarCollapsed} />
             <Button
               variant="ghost"
               size="sm"
-              className={cn(
-                "ml-auto h-8 w-8",
-                isSidebarCollapsed && "ml-0"
-              )}
-              onClick={handleSidebarToggle}
+              className="h-8 w-8"
+              onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
             >
               {isSidebarCollapsed ? (
                 <ChevronRight className="h-4 w-4" />
@@ -174,11 +169,8 @@ export default function DashboardShell({
       <Sheet open={isMobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetContent side="left" className="w-64 p-0">
           <SheetHeader className="h-16 border-b px-4">
-            <SheetTitle className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <FileText className="h-5 w-5" />
-              </div>
-              <span className="font-semibold">LegalDraw AI</span>
+            <SheetTitle asChild>
+              <Logo />
             </SheetTitle>
           </SheetHeader>
           <div className="flex h-[calc(100vh-4rem)] flex-col">
@@ -204,55 +196,40 @@ export default function DashboardShell({
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* Desktop Search */}
           <div className="hidden sm:flex flex-1 items-center gap-4">
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-lg">
               <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                 <Input
                   placeholder="Search documents..."
-                  className="pl-9"
+                  className="pl-9 border-zinc-200 focus:ring-zinc-900"
                 />
               </div>
             </div>
           </div>
 
-          {/* Mobile Search Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="sm:hidden"
-            onClick={() => setMobileSearchOpen(!isMobileSearchOpen)}
-          >
+          <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setMobileSearchOpen(!isMobileSearchOpen)}>
             <Search className="h-5 w-5" />
           </Button>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-            >
-              <Bell className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <Bell className="h-5 w-5" />
+          </Button>
         </header>
 
-        {/* Mobile Search Bar */}
         {isMobileSearchOpen && (
           <div className="sm:hidden border-b bg-white px-4 py-2">
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
               <Input
                 placeholder="Search documents..."
-                className="pl-9"
+                className="pl-9 border-zinc-200"
                 autoFocus
               />
             </div>
           </div>
         )}
 
-        {/* Page Content */}
         <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
           {children}
         </main>

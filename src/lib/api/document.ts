@@ -11,7 +11,9 @@ import type {
   DocumentStats,
   DocumentHistory,
   DocumentUpdate,
-  PartyUpdate
+  PartyUpdate,
+  DocumentDraftResponse,
+  DocumentDraftStatus
 } from '@/types/document';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -300,6 +302,91 @@ export const documentApi = {
         status: error?.error?.status || 500,
         message: error.message || 'Failed to download document',
         code: 'DOWNLOAD_ERROR'
+      });
+    }
+  },
+
+  async saveDraft(documentId: string, data: {
+    content: string;
+    version: number;
+    document_metadata: any;
+  }): Promise<DocumentDraftResponse> {
+    try {
+      const response = await authApi.authenticatedRequest<DocumentDraftResponse>(
+        `${API_BASE_URL}/api/documents/${documentId}/draft`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(data)
+        }
+      );
+      return response;
+    } catch (error: any) {
+      throw new DocumentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to save draft',
+        code: 'SAVE_DRAFT_ERROR'
+      });
+    }
+  },
+  
+  async publishDraft(documentId: string): Promise<DocumentResponse> {
+    try {
+      const response = await authApi.authenticatedRequest<DocumentResponse>(
+        `${API_BASE_URL}/api/documents/${documentId}/draft/publish`,
+        {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
+      );
+      return response;
+    } catch (error: any) {
+      throw new DocumentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to publish draft',
+        code: 'PUBLISH_DRAFT_ERROR'
+      });
+    }
+  },
+  
+  async discardDraft(documentId: string): Promise<void> {
+    try {
+      await authApi.authenticatedRequest(
+        `${API_BASE_URL}/api/documents/${documentId}/draft`,
+        {
+          method: 'DELETE',
+        }
+      );
+    } catch (error: any) {
+      throw new DocumentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to discard draft',
+        code: 'DISCARD_DRAFT_ERROR'
+      });
+    }
+  },
+  
+  async getDraftStatus(documentId: string): Promise<DocumentDraftStatus> {
+    try {
+      const response = await authApi.authenticatedRequest<DocumentDraftStatus>(
+        `${API_BASE_URL}/api/documents/${documentId}/draft/status`,
+        {
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
+      );
+      return response;
+    } catch (error: any) {
+      throw new DocumentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to get draft status',
+        code: 'GET_DRAFT_STATUS_ERROR'
       });
     }
   }

@@ -33,7 +33,19 @@ export interface ServiceVariables {
   governing_law: string;
   effective_date: string;
 }
+export interface DocumentDraftStatus {
+  version: number;
+  has_unsaved_changes: boolean;
+  last_edited?: string;
+  editor?: string;
+}
 
+export interface DocumentDraftResponse {
+  version: number;
+  content: string;
+  document_metadata: any;
+  last_edited: string;
+}
 
 export type DocumentVariables = NDAVariables | ServiceVariables;
 

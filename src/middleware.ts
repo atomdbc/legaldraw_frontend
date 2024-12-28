@@ -4,10 +4,31 @@ import type { NextRequest } from 'next/server';
 import { jwtDecode } from "jwt-decode";
 import { DOCUMENT_TYPES } from '@/lib/utils/documentTypes';
 
-const publicPaths = ['/login', '/register', '/reset-password'];
+const publicPaths = [
+  '/',          // Landing page
+  '/login', 
+  '/register', 
+  '/reset-password',
+  // Add any other public paths here
+];
+
+const authRequiredPaths = [
+  '/dashboard',
+  '/documents',
+  '/settings'
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Allow public assets and API routes
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.includes('favicon.ico')
+  ) {
+    return NextResponse.next();
+  }
 
   // Document type validation for create routes
   if (pathname.startsWith('/documents/create/')) {
@@ -19,13 +40,15 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Always allow public paths
-  if (publicPaths.includes(pathname)) {
+  // Check if the path is public
+  if (publicPaths.some(path => pathname === path)) {
     const token = request.cookies.get('accessToken')?.value;
+    
     if (token) {
       try {
         const decoded = jwtDecode(token);
         if (decoded && decoded.exp && decoded.exp > Date.now() / 1000) {
+          // If user is already authenticated, redirect to dashboard
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
       } catch (error) {
@@ -35,19 +58,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected routes
-  const token = request.cookies.get('accessToken')?.value;
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // Protected routes handling
+  if (authRequiredPaths.some(path => pathname.startsWith(path))) {
+    const token = request.cookies.get('accessToken')?.value;
 
-  try {
-    const decoded = jwtDecode(token);
-    if (!decoded || !decoded.exp || decoded.exp <= Date.now() / 1000) {
+    if (!token) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
-  } catch (error) {
-    return NextResponse.redirect(new URL('/login', request.url));
+
+    try {
+      const decoded = jwtDecode(token);
+      if (!decoded || !decoded.exp || decoded.exp <= Date.now() / 1000) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+    } catch (error) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
   }
 
   return NextResponse.next();
@@ -55,7 +81,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
     '/documents/create/:type*'
   ]
 };

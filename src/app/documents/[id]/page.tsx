@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { use } from 'react';
 import { useDocument } from '@/hooks/useDocument';
 import type { DocumentContentResponse } from '@/types/document';
@@ -19,7 +19,10 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Info
+  Info,
+  Code,
+  Edit,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -41,6 +44,7 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { DocumentEditor } from '@/components/documents/editor/DocumentEditor';
 
 interface DocumentPageProps {
   params: Promise<{ id: string }>;
@@ -128,56 +132,130 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const [isMobileNavOpen, setMobileNavOpen] = useState(false);
   const [isInfoOpen, setInfoOpen] = useState(false);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
-
+  const [isSettingsOpen, setSettingsOpen] = useState(false);
+  const [hasCoverPage, setHasCoverPage] = useState(false);
+  const [coverPageText, setCoverPageText] = useState('');
+  const [coverPageLogo, setCoverPageLogo] = useState<File | null>(null);
+  const [hasWatermark, setHasWatermark] = useState(false);
+  const [watermarkText, setWatermarkText] = useState('');
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [draftContent, setDraftContent] = useState<string | null>(null);
 
   const isMounted = useRef(true);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchTime = useRef<number>(0);
   const MIN_FETCH_INTERVAL = 5000;
 
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-    };
-  }, []);
-  
-  const handleError = (err: unknown) => {
-    if (err instanceof DocumentApiError) {
-      setError(err);
-      if (err.error.status === 429 && retryCount < 3) {
-        toast({
-          variant: "warning",
-          title: "Too Many Requests",
-          description: "Please wait a moment, retrying..."
-        });
-        return true;
-      } else {
-        toast({
-          variant: "destructive",
-          title: err.error.status === 404 ? "Not Found" : "Error",
-          description: err.error.message
-        });
-      }
-    } else {
-      setError(new DocumentApiError({
-        status: 500,
-        message: 'An unexpected error occurred',
-        code: 'UNKNOWN_ERROR'
-      }));
+  // Handle settings changes
+  const handleSettingsChange = useCallback(({ 
+    hasCoverPage: newHasCoverPage, 
+    coverPageText: newCoverPageText, 
+    hasWatermark: newHasWatermark, 
+    watermarkText: newWatermarkText 
+  }) => {
+    requestAnimationFrame(() => {
+      if (newHasCoverPage !== undefined) setHasCoverPage(newHasCoverPage);
+      if (newCoverPageText !== undefined) setCoverPageText(newCoverPageText);
+      if (newHasWatermark !== undefined) setHasWatermark(newHasWatermark);
+      if (newWatermarkText !== undefined) setWatermarkText(newWatermarkText);
+      setActiveTab('preview'); // Auto switch to preview
+
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load document"
+        title: "View changes in Preview",
+        description: "Switch to Preview tab to see your changes",
+        duration: 3000
       });
+    });
+  }, [toast]);
+
+  // Handle logo upload
+  const handleLogoUpload = useCallback((file: File) => {
+    requestAnimationFrame(() => {
+      setCoverPageLogo(file);
+      setActiveTab('preview');
+      toast({
+        title: "Logo uploaded",
+        description: "Switch to Preview tab to see the changes",
+        duration: 3000
+      });
+    });
+  }, [toast]);
+
+  // Handle logo remove
+  const handleLogoRemove = useCallback(() => {
+    requestAnimationFrame(() => {
+      setCoverPageLogo(null);
+      setActiveTab('preview');
+      toast({
+        title: "Logo removed",
+        description: "Switch to Preview tab to see the changes",
+        duration: 3000
+      });
+    });
+  }, [toast]);
+
+  // Handle save draft
+  const saveDraft = useCallback(async (content: string) => {
+    try {
+      setIsDraftSaving(true);
+      // TODO: Add API call to save draft
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setLastSaved(new Date());
+      toast({
+        title: "Draft saved",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to save draft",
+        description: "Your changes could not be saved. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDraftSaving(false);
     }
-    return false;
+  }, [toast]);
+  
+  // Handle publish changes
+  const handlePublishChanges = async () => {
+    try {
+      setIsDraftSaving(true);
+      // TODO: Add API call to publish changes
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Temporary for testing
+      
+      toast({
+        title: "Changes published",
+        description: "Your document has been updated.",
+      });
+      
+      // Reset draft state
+      setDraftContent(null);
+      setLastSaved(null);
+      setActiveTab('preview');
+    } catch (error) {
+      toast({
+        title: "Failed to publish",
+        description: "Your changes could not be published. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDraftSaving(false);
+    }
   };
   
+  // Handle discard changes
+  const handleDiscardChanges = () => {
+    setDraftContent(null);
+    setLastSaved(null);
+    setActiveTab('preview');
+    toast({
+      title: "Changes discarded",
+      description: "Your draft has been discarded.",
+    });
+  };
   const fetchDocument = async (retry = false) => {
     if (!documentId || isRetrying) return;
   
@@ -207,8 +285,153 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   
       const contentResponse = await getDocumentContent(documentId);
       if (!isMounted.current) return;
+  
+      const baseContent = contentResponse?.content || '';
+  
+      // Add watermark and cover page styles
+      const styles = `
+  <style>
+    ${hasWatermark ? `
+      /* First, set base styles for all pages */
+      .page {
+        position: relative !important;
+        overflow: hidden !important;
+      }
       
-      setContent(contentResponse?.content || null);
+      /* Then add watermark to all pages except cover page */
+      body > div:not(.cover-page).page::before {
+        content: "${watermarkText || 'DRAFT'}";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 72px;
+        font-weight: bold;
+        color: rgba(0, 0, 0, 0.08);
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 1000;
+        width: 100%;
+        text-align: center;
+        font-family: system-ui, -apple-system, sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+      }
+    ` : ''}w
+          ${hasCoverPage ? `
+            body {
+  margin: 0;
+  padding: 0;
+  min-width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+            .cover-page {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              padding: 4rem;
+              page-break-after: always;
+              background: white;
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+            .logo-container {
+              flex: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 3rem;
+              max-height: 200px;
+            }
+            .logo-container img {
+              max-width: 180px;
+              max-height: 180px;
+              object-fit: contain;
+            }
+            .title-container {
+              width: 100%;
+              max-width: 600px;
+              text-align: center;
+              margin: 0 auto;
+            }
+            .cover-title {
+              font-size: 32px;
+              font-weight: 600;
+              color: #171717;
+              line-height: 1.4;
+              margin: 0;
+              padding: 0;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              hyphens: auto;
+              display: -webkit-box;
+              -webkit-line-clamp: 4;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+            }
+            .document-type {
+              font-size: 16px;
+              color: #666;
+              margin-top: 1rem;
+              font-weight: 500;
+            }
+            .document-date {
+              font-size: 14px;
+              color: #888;
+              margin-top: 0.5rem;
+            }
+          ` : ''}
+        </style>
+      `;
+  
+      // Generate cover page HTML
+      const coverPageHtml = hasCoverPage ? `
+        <div class="page cover-page">
+          ${coverPageLogo ? 
+            `<div class="logo-container">
+              <img src="${URL.createObjectURL(coverPageLogo)}" alt="Cover Logo" />
+            </div>` 
+            : ''
+          }
+          <div class="title-container">
+            <h1 class="cover-title">${coverPageText || 'Cover Page'}</h1>
+            <div class="document-type">${document?.document_type || ''}</div>
+            <div class="document-date">
+              ${format(new Date(document?.generated_at || new Date()), 'MMMM d, yyyy')}
+            </div>
+          </div>
+        </div>
+      ` : '';
+  
+      // Check if content has HTML structure
+      const hasHtmlStructure = baseContent.includes('<!DOCTYPE html>') || baseContent.includes('<html');
+  
+      let fullContent;
+      if (hasHtmlStructure) {
+        // Insert styles and cover page into existing HTML
+        fullContent = baseContent
+          .replace('<head>', `<head>${styles}`)
+          .replace('<body', `<body>${hasCoverPage ? coverPageHtml : ''}`);
+      } else {
+        // Wrap content in new HTML structure
+        fullContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              ${styles}
+            </head>
+            <body>
+              ${hasCoverPage ? coverPageHtml : ''}
+              ${baseContent}
+            </body>
+          </html>
+        `;
+      }
+  
+      setContent(fullContent);
       setRetryCount(0);
     } catch (err) {
       if (!isMounted.current) return;
@@ -224,6 +447,24 @@ export default function DocumentPage({ params }: DocumentPageProps) {
       }
     }
   };
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  // Add this useEffect to handle all document updates
+  useEffect(() => {
+    fetchDocument();
+  }, [documentId, hasCoverPage, coverPageText, coverPageLogo, hasWatermark, watermarkText]);
+  
+  useEffect(() => {
+    fetchDocument();
+  }, [documentId, hasCoverPage, coverPageText, coverPageLogo]);
   
   useEffect(() => {
     fetchDocument();
@@ -376,10 +617,16 @@ export default function DocumentPage({ params }: DocumentPageProps) {
                 <Download className="h-4 w-4" />
                 <span className="ml-1.5 hidden sm:inline">Download</span>
               </Button>
-              <Button size="sm" className="hidden sm:flex">
-                <Settings className="mr-1.5 h-4 w-4" />
-                Settings
-              </Button>
+              <Button 
+  size="sm" 
+  className="hidden sm:flex"
+  onClick={() => setSettingsOpen(true)}
+>
+  <Settings className="mr-1.5 h-4 w-4" />
+  Settings
+</Button>
+
+
             </div>
           </div>
         </div>
@@ -403,12 +650,22 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
           {/* Document Preview */}
           <div className="flex-1 min-w-0 bg-white">
-            <Card className="h-full rounded-none border-0">
+            <Card className="h-full w-full rounded-none border-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
                 <div className="flex-none flex items-center justify-between border-b px-4">
                   <TabsList>
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
-                    <TabsTrigger value="code">HTML Code</TabsTrigger>
+                    <TabsTrigger value="preview" className="gap-2">
+                      <FileText className="h-4 w-4" />
+                      Preview
+                    </TabsTrigger>
+                    <TabsTrigger value="edit" className="gap-2">
+                      <Edit className="h-4 w-4" />
+                      {isDraftSaving && <Loader2 className="ml-2 h-3 w-3 animate-spin" />}
+                    </TabsTrigger>
+                    <TabsTrigger value="code" className="gap-2">
+                      <Code className="h-4 w-4" />
+                      Source
+                    </TabsTrigger>
                   </TabsList>
                   <Button variant="ghost" size="sm">
                     <Download className="h-4 w-4 mr-1.5" />
@@ -416,15 +673,16 @@ export default function DocumentPage({ params }: DocumentPageProps) {
                   </Button>
                 </div>
 
-                <div className="flex-1 min-h-0">
-                  <TabsContent value="preview" className="h-full m-0 p-0">
+                <div className="flex-1 min-h-0 h-full relative"> 
+                <TabsContent value="preview" className="absolute inset-0 !m-0 !p-0">
                     {content ? (
                       <iframe
                         ref={previewIframeRef}
                         srcDoc={content}
                         title="Document Preview"
-                        className="w-full h-full border-0"
+                        className="w-full h-full border-0 absolute inset-0"
                         sandbox="allow-same-origin"
+                        style={{ minWidth: '100%', minHeight: '100%' }}
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full bg-gray-50">
@@ -437,9 +695,30 @@ export default function DocumentPage({ params }: DocumentPageProps) {
                   </TabsContent>
 
                   <TabsContent value="code" className="h-full m-0">
-                    <pre className="h-full overflow-auto bg-gray-50 p-4 text-sm">
-                      {content || 'No content available'}
-                    </pre>
+  <div className="h-full overflow-auto bg-zinc-50 p-4">
+    <pre className="text-sm font-mono whitespace-pre-wrap break-words max-w-full">
+      <code className="block w-full">{content || 'No content available'}</code>
+    </pre>
+  </div>
+</TabsContent>
+<TabsContent value="edit" className="absolute inset-0 !m-0">
+<DocumentEditor 
+                      content={content || ''}
+                      documentId={documentId}
+                      documentType={document.document_type}
+                      version={document.version}
+                      onSave={saveDraft}
+                      settings={{
+                        hasCoverPage,
+                        coverPageText,
+                        hasWatermark,
+                        watermarkText,
+                        coverPageLogo
+                      }}
+                      onSettingsChange={handleSettingsChange}
+                      onLogoUpload={handleLogoUpload}
+                      onLogoRemove={handleLogoRemove}
+                    />
                   </TabsContent>
                 </div>
               </Tabs>

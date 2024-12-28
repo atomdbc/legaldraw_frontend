@@ -7,8 +7,19 @@
 ├── package.json
 ├── postcss.config.mjs
 ├── public
+│   ├── cta
+│   │   ├── arab.jpg
+│   │   ├── man1.jpg
+│   │   ├── man2.jpg
+│   │   └── man3.jpg
 │   ├── file.svg
 │   ├── globe.svg
+│   ├── logos
+│   │   ├── glg.svg
+│   │   ├── legalcore.svg
+│   │   ├── techlawfirms.svg
+│   │   └── thompson.svg
+│   ├── mockup.png
 │   ├── next.svg
 │   ├── vercel.svg
 │   └── window.svg
@@ -68,6 +79,14 @@
 │   │   │       ├── DocumentList.tsx
 │   │   │       └── TemplateGrid.tsx
 │   │   ├── documents
+│   │   │   ├── editor
+│   │   │   │   ├── DocumentEditor
+│   │   │   │   │   ├── EditorContent.tsx
+│   │   │   │   │   ├── EditorHeader.tsx
+│   │   │   │   │   ├── EditorSettings.tsx
+│   │   │   │   │   ├── EditorToolbar.tsx
+│   │   │   │   │   └── index.tsx
+│   │   │   │   └── edit
 │   │   │   ├── forms
 │   │   │   │   ├── AddressForm.tsx
 │   │   │   │   ├── PartyDetailsForm.tsx
@@ -75,10 +94,13 @@
 │   │   │   │   ├── PartyList.tsx
 │   │   │   │   └── VariableForm.tsx
 │   │   │   ├── preview
-│   │   │   │   └── DocumentPreviewPanel.tsx
+│   │   │   │   ├── DocumentPreviewPanel.tsx
+│   │   │   │   └── ShareModal.tsx
 │   │   │   ├── ui
+│   │   │   │   ├── DocumentSettingsModal.tsx
 │   │   │   │   ├── PreviewFrame.tsx
-│   │   │   │   └── WizardSteps.tsx
+│   │   │   │   ├── WizardSteps.tsx
+│   │   │   │   └── custom-modal.tsx
 │   │   │   └── wizard
 │   │   │       ├── DocumentPreview.tsx
 │   │   │       ├── DocumentReviewModal.tsx
@@ -86,6 +108,20 @@
 │   │   │       ├── DocumentVariables.tsx
 │   │   │       ├── DocumentWizard.tsx
 │   │   │       └── PartyInformation.tsx
+│   │   ├── landing
+│   │   │   ├── CTA.tsx
+│   │   │   ├── FeatureShowcase.tsx
+│   │   │   ├── Features.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Hero.tsx
+│   │   │   ├── HowItWorks.tsx
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── Pricing.tsx
+│   │   │   ├── TechStack.tsx
+│   │   │   ├── TrustSignals.tsx
+│   │   │   └── UseCases.tsx
+│   │   ├── layout
+│   │   │   └── LandingLayout.tsx
 │   │   └── ui
 │   │       ├── alert-dialog.tsx
 │   │       ├── alert.tsx
@@ -151,4 +187,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-39 directories, 113 files
+45 directories, 143 files

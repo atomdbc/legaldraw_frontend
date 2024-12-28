@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import  DocumentTypeSelector  from "@/components/documents/wizard/DocumentTypeSelector";
+import DocumentTypeSelector from "@/components/documents/wizard/DocumentTypeSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useDocumentProgress } from "@/hooks/useDocumentProgress";
 import { isValidDocumentType } from "@/lib/utils/documentTypes";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 export default function CreateDocumentPage() {
   const router = useRouter();
@@ -33,7 +33,6 @@ export default function CreateDocumentPage() {
 
     setIsLoading(true);
     try {
-      // Initialize document progress
       await initializeProgress({
         type: selectedType,
         step: 1,
@@ -42,8 +41,6 @@ export default function CreateDocumentPage() {
           type: selectedType,
         }
       });
-
-      // Navigate to parties step directly
       router.push(`/documents/create/${selectedType}/parties`);
     } catch (error) {
       console.error('Error starting document creation:', error);
@@ -58,25 +55,39 @@ export default function CreateDocumentPage() {
   };
 
   const handleCancel = () => {
-    const returnUrl = '/documents';
-    router.push(returnUrl);
+    router.push('/documents');
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
+    <div className="min-h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row">
       <div className="flex-1 flex flex-col">
-        {/* Main Content */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-4xl mx-auto">
-            <div className="space-y-1 mb-6">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                Create New Document
-              </h1>
-              <p className="text-muted-foreground">
-                Choose the type of document you want to create.
-              </p>
+        {/* Header */}
+        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleCancel}
+                className="lg:hidden"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+                  Create New Document
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Choose the type of document you want to create
+                </p>
+              </div>
             </div>
+          </div>
+        </div>
 
+        {/* Main Content */}
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
             <DocumentTypeSelector
               onSelect={handleTypeSelect}
               selectedType={selectedType}
@@ -84,19 +95,21 @@ export default function CreateDocumentPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="border-t p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="max-w-4xl mx-auto flex items-center justify-end gap-4">
+        {/* Floating Action Bar */}
+        <div className="sticky bottom-0 border-t p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-lg">
+          <div className="max-w-4xl mx-auto flex items-center justify-between sm:justify-end gap-4">
             <Button
               variant="outline"
               onClick={handleCancel}
               disabled={isLoading}
+              className="flex-1 sm:flex-none"
             >
               Cancel
             </Button>
             <Button
               onClick={handleContinue}
               disabled={!selectedType || isLoading}
+              className="flex-1 sm:flex-none"
             >
               {isLoading ? (
                 <>
@@ -112,37 +125,27 @@ export default function CreateDocumentPage() {
       </div>
 
       {/* Guide Sidebar */}
-      <div className="hidden lg:block w-1/3 border-l bg-muted/10 p-6">
-        <div className="sticky top-6">
-          <h3 className="font-medium">Document Creation Guide</h3>
+      <div className="hidden lg:block w-80 xl:w-96 border-l bg-muted/10">
+        <div className="sticky top-0 p-6">
+          <h3 className="font-medium text-lg">Document Creation Guide</h3>
           <p className="text-sm text-muted-foreground mt-2">
             Follow these steps to create your document:
           </p>
-          <ol className="mt-4 space-y-4 text-sm text-muted-foreground">
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
-                1
-              </span>
-              <span>Select your document type from the available options</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
-                2
-              </span>
-              <span>Add the parties involved in the agreement</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
-                3
-              </span>
-              <span>Fill in the required document details</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
-                4
-              </span>
-              <span>Review and generate your document</span>
-            </li>
+          <ol className="mt-6 space-y-6">
+            {[
+              'Select your document type from the available options',
+              'Add the parties involved in the agreement',
+              'Fill in the required document details',
+              'Review and generate your document'
+            ].map((step, index) => (
+              <li key={index} className="flex gap-4">
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs
+                  ${index === 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                  {index + 1}
+                </span>
+                <span className="text-sm">{step}</span>
+              </li>
+            ))}
           </ol>
         </div>
       </div>

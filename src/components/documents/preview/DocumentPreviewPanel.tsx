@@ -9,18 +9,25 @@ interface PageThumbnail {
   id: number;
   title: string;
   selected: boolean;
+  isCoverPage?: boolean;
 }
 
 interface DocumentPreviewPanelProps {
   content: string;
   onPageChange?: (pageNumber: number) => void;
   previewIframeRef: React.RefObject<HTMLIFrameElement>;
+  hasCoverPage?: boolean;
+  coverPageText?: string;
+  coverPageLogo?: File | null;
 }
 
 export function DocumentPreviewPanel({
   content,
   onPageChange,
-  previewIframeRef
+  previewIframeRef,
+  hasCoverPage,
+  coverPageText,
+  coverPageLogo
 }: DocumentPreviewPanelProps) {
   const [pages, setPages] = useState<PageThumbnail[]>([]);
   const [selectedPage, setSelectedPage] = useState(1);
@@ -38,25 +45,41 @@ export function DocumentPreviewPanel({
       tempIframe.contentDocument.close();
 
       const pageElements = tempIframe.contentDocument.querySelectorAll('.page');
-      const newPages = Array.from(pageElements).map((_, index) => ({
-        id: index + 1,
-        title: `Page ${index + 1}`,
-        selected: index === 0
-      }));
+      const contentPages = Array.from(pageElements).map((_, index) => {
+        const pageNumber = hasCoverPage ? index + 2 : index + 1;
+        return {
+          id: pageNumber,
+          title: `Page ${pageNumber}`,
+          selected: false
+        };
+      });
 
-      setPages(newPages);
+      if (hasCoverPage) {
+        contentPages.unshift({
+          id: 1,
+          title: 'Cover Page',
+          selected: true,
+          isCoverPage: true
+        });
+      }
+
+      setPages(contentPages);
       document.body.removeChild(tempIframe);
     }
-  }, [content]);
+  }, [content, hasCoverPage]);
 
   const handlePageClick = (pageNumber: number) => {
     setSelectedPage(pageNumber);
     onPageChange?.(pageNumber);
 
     if (previewIframeRef.current?.contentDocument) {
-      const pageElement = previewIframeRef.current.contentDocument
-        .querySelector(`.page:nth-child(${pageNumber})`);
-      pageElement?.scrollIntoView({ behavior: 'smooth' });
+      // If it's not the cover page, adjust the page selection
+      const targetPage = hasCoverPage ? `.page:nth-child(${pageNumber})` : `.page:nth-child(${pageNumber})`;
+      const pageElement = previewIframeRef.current.contentDocument.querySelector(targetPage);
+      
+      if (pageElement) {
+        pageElement.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -75,13 +98,31 @@ export function DocumentPreviewPanel({
               )}
             >
               <div className="aspect-[8.5/11] w-full rounded border bg-background shadow-sm overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                  {page.id}
-                </div>
+                {page.isCoverPage ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                    {coverPageLogo && (
+                      <div className="flex-1 flex items-center justify-center">
+                        <img 
+                          src={URL.createObjectURL(coverPageLogo)} 
+                          alt="Cover Logo" 
+                          className="max-w-[150px] max-h-[150px] object-contain mb-4"
+                        />
+                      </div>
+                    )}
+                    <div className="text-sm font-medium text-center text-zinc-900">
+                      {coverPageText || 'Cover Page'}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                    {page.id}
+                  </div>
+                )}
               </div>
-              
               <div className="flex items-center justify-between px-1 mt-1">
-                <span className="text-[10px] font-medium">Page {page.id}</span>
+                <span className="text-[10px] font-medium truncate">
+                  {page.title}
+                </span>
                 {selectedPage === page.id && (
                   <span className="text-[8px] bg-primary/10 text-primary px-1 rounded">•</span>
                 )}

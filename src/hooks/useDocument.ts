@@ -24,6 +24,8 @@ export function useDocument() {
   const [documentStats, setDocumentStats] = useState<DocumentStats | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
+  const [draftVersion, setDraftVersion] = useState<number>(0);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Simple rate limiting
   const lastFetchTime = useRef<number>(0);
@@ -148,6 +150,38 @@ export function useDocument() {
     }
   }, [isLoading, toast]);
 
+  const saveDraft = useCallback(async (documentId: string, content: string) => {
+    setIsLoading(true);
+    try {
+      const response = await documentApi.saveDraft(documentId, {
+        content,
+        version: draftVersion + 1,
+        document_metadata: {
+          last_edited: new Date().toISOString(),
+          has_cover_page: hasCoverPage,
+          watermark_settings: {
+            enabled: hasWatermark,
+            text: watermarkText
+          }
+        }
+      });
+
+      setDraftVersion(response.version);
+      setHasUnsavedChanges(false);
+      return response;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save draft"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [draftVersion, toast]);
+
+
   // Update Document
   const updateDocument = useCallback(async (documentId: string, data: DocumentUpdate) => {
     if (isLoading) return;
@@ -198,6 +232,64 @@ export function useDocument() {
       setIsLoading(false);
     }
   }, [isLoading, toast]);
+
+  const publishDraft = useCallback(async (documentId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await documentApi.publishDraft(documentId);
+      setDraftVersion(0); // Reset draft version
+      setHasUnsavedChanges(false);
+      toast({
+        title: "Success",
+        description: "Changes published successfully"
+      });
+      return response;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to publish changes"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+  
+  // For discarding draft
+  const discardDraft = useCallback(async (documentId: string) => {
+    setIsLoading(true);
+    try {
+      await documentApi.discardDraft(documentId);
+      setDraftVersion(0);
+      setHasUnsavedChanges(false);
+      toast({
+        title: "Success",
+        description: "Draft discarded"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to discard draft"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+  
+  // For getting draft status
+  const getDraftStatus = useCallback(async (documentId: string) => {
+    try {
+      const response = await documentApi.getDraftStatus(documentId);
+      setDraftVersion(response.version);
+      setHasUnsavedChanges(response.has_unsaved_changes);
+      return response;
+    } catch (error: any) {
+      console.error("Failed to get draft status:", error);
+    }
+  }, []);
 
   // Search Documents
   const searchDocuments = useCallback(async (
@@ -268,7 +360,14 @@ export function useDocument() {
     updateDocument,
     getDocumentHistory,
     searchDocuments,
-    getStats
+    getStats,
+    saveDraft,
+    draftVersion,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+    publishDraft,
+  discardDraft,
+  getDraftStatus,
   };
 }
 
