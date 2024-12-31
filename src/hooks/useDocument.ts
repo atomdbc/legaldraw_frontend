@@ -5,14 +5,10 @@ import { documentApi } from '@/lib/api/document';
 import { useToast } from '@/hooks/use-toast';
 import type {
   DocumentResponse,
-  DocumentListResponse,
   GenerateDocumentRequest,
   DocumentDetailResponse,
   DocumentContentResponse,
-  DocumentSearchParams,
   DocumentStats,
-  DocumentHistory,
-  DocumentUpdate,
 } from '@/types/document';
 
 export function useDocument() {
@@ -150,65 +146,11 @@ export function useDocument() {
     }
   }, [isLoading, toast]);
 
-  const saveDraft = useCallback(async (documentId: string, content: string) => {
-    setIsLoading(true);
-    try {
-      const response = await documentApi.saveDraft(documentId, {
-        content,
-        version: draftVersion + 1,
-        document_metadata: {
-          last_edited: new Date().toISOString(),
-          has_cover_page: hasCoverPage,
-          watermark_settings: {
-            enabled: hasWatermark,
-            text: watermarkText
-          }
-        }
-      });
 
-      setDraftVersion(response.version);
-      setHasUnsavedChanges(false);
-      return response;
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save draft"
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [draftVersion, toast]);
 
 
   // Update Document
-  const updateDocument = useCallback(async (documentId: string, data: DocumentUpdate) => {
-    if (isLoading) return;
-    
-    setIsLoading(true);
-    try {
-      const response = await documentApi.updateDocument(documentId, data);
-      setCurrentDocument(response);
-      setError(null);
-      toast({
-        title: "Success",
-        description: "Document updated successfully"
-      });
-      return response;
-    } catch (error: any) {
-      const err = error instanceof Error ? error : new Error('Failed to update document');
-      setError(err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err.message
-      });
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, toast]);
+  
 
   // Get Document History
   const getDocumentHistory = useCallback(async (documentId: string) => {
@@ -257,28 +199,7 @@ export function useDocument() {
   }, [toast]);
   
   // For discarding draft
-  const discardDraft = useCallback(async (documentId: string) => {
-    setIsLoading(true);
-    try {
-      await documentApi.discardDraft(documentId);
-      setDraftVersion(0);
-      setHasUnsavedChanges(false);
-      toast({
-        title: "Success",
-        description: "Draft discarded"
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to discard draft"
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-  
+
   // For getting draft status
   const getDraftStatus = useCallback(async (documentId: string) => {
     try {
@@ -292,32 +213,7 @@ export function useDocument() {
   }, []);
 
   // Search Documents
-  const searchDocuments = useCallback(async (
-    params: DocumentSearchParams,
-    skip: number = 0,
-    limit: number = 100
-  ) => {
-    if (isLoading) return;
-    
-    setIsLoading(true);
-    try {
-      const response = await documentApi.searchDocuments(params, skip, limit);
-      setDocuments(response.documents);
-      setError(null);
-      return response;
-    } catch (error: any) {
-      const err = error instanceof Error ? error : new Error('Failed to search documents');
-      setError(err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err.message
-      });
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, toast]);
+
 
   // Get Document Stats
   const getStats = useCallback(async () => {
@@ -357,16 +253,12 @@ export function useDocument() {
     generateDocument,
     getDocument,
     getDocumentContent,
-    updateDocument,
     getDocumentHistory,
-    searchDocuments,
     getStats,
-    saveDraft,
     draftVersion,
     hasUnsavedChanges,
     setHasUnsavedChanges,
     publishDraft,
-  discardDraft,
   getDraftStatus,
   };
 }
