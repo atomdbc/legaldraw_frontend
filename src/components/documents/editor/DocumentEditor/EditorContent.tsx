@@ -160,11 +160,6 @@ export function EditorContent({
           onClick={() => setIsFullScreen(!isFullScreen)}
           className="text-gray-500 hover:text-gray-900"
         >
-          {isFullScreen ? (
-            <Minimize2 className="h-4 w-4" />
-          ) : (
-            <Maximize2 className="h-4 w-4" />
-          )}
         </Button>
       </div>
 

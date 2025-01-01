@@ -106,7 +106,7 @@ const DocumentInfo = ({ document }) => (
       <Users className="h-4 w-4 text-gray-500" />
       <div>
         <p className="text-sm font-medium">Shared With</p>
-        <p className="text-sm text-gray-500">3 People</p>
+        <p className="text-sm text-gray-500">coming soon</p>
       </div>
     </div>
   </div>
@@ -405,7 +405,6 @@ export default function DocumentPage({ params }: DocumentPageProps) {
                   <Separator orientation="vertical" className="h-6" />
 
                   <Button size="sm" variant="ghost" className="h-9 w-9 p-0">
-                    <Maximize2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
