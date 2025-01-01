@@ -83,7 +83,6 @@
 │   │   │   │   ├── DocumentEditor
 │   │   │   │   │   ├── EditorContent.tsx
 │   │   │   │   │   ├── EditorHeader.tsx
-│   │   │   │   │   ├── EditorSettings.tsx
 │   │   │   │   │   ├── EditorToolbar.tsx
 │   │   │   │   │   └── index.tsx
 │   │   │   │   └── edit
@@ -116,6 +115,7 @@
 │   │   │   ├── Hero.tsx
 │   │   │   ├── HowItWorks.tsx
 │   │   │   ├── Navbar.tsx
+│   │   │   ├── PreviewContent.tsx
 │   │   │   ├── Pricing.tsx
 │   │   │   ├── TechStack.tsx
 │   │   │   ├── TrustSignals.tsx
@@ -138,6 +138,7 @@
 │   │       ├── input.tsx
 │   │       ├── label.tsx
 │   │       ├── popover.tsx
+│   │       ├── progress.tsx
 │   │       ├── resizable.tsx
 │   │       ├── scroll-area.tsx
 │   │       ├── select.tsx
@@ -187,4 +188,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-45 directories, 143 files
+45 directories, 144 files
