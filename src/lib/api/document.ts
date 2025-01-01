@@ -1,12 +1,14 @@
 // src/lib/api/document.ts
 
 import { authApi } from './auth';
+import { v4 as uuidv4 } from 'uuid';
 import type {
   DocumentResponse,
   DocumentListResponse,
   GenerateDocumentRequest,
   DocumentContentResponse,
   DocumentStats,
+  PublishDraftRequest
 } from '@/types/document';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -164,4 +166,46 @@ export const documentApi = {
     }
   },
 
+  async publishDraft(
+    documentId: string, 
+    content: string, 
+    version: string
+  ): Promise<DocumentResponse> {
+    try {
+      const newDocumentId = uuidv4();
+      
+      const publishData: PublishDraftRequest = {
+        new_document_id: newDocumentId,
+        content: content,
+        status: "COMPLETED",
+        document_metadata: {
+          published_at: new Date().toISOString(),
+          published_by: documentId,
+          original_document_id: documentId,
+        }
+      };
+  
+      const response = await authApi.authenticatedRequest<DocumentResponse>(
+        `${API_BASE_URL}/api/documents/${documentId}/publish`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(publishData)
+        }
+      );
+      return response;
+    } catch (error: any) {
+      console.error('Publish error:', error);
+      throw new DocumentApiError({
+        status: error?.error?.status || 500,
+        message: error?.error?.message || error.message || 'Failed to publish draft',
+        code: 'PUBLISH_DRAFT_ERROR'
+      });
+    }
+  }
+
 };
+

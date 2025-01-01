@@ -1,248 +1,150 @@
-import { useEffect, useCallback, useRef } from 'react';
-import { EditorContent as TipTapEditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Heading from '@tiptap/extension-heading';
-import Document from '@tiptap/extension-document';
-import Paragraph from '@tiptap/extension-paragraph';
-import Text from '@tiptap/extension-text';
-import TextAlign from '@tiptap/extension-text-align';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { useEffect, useRef } from 'react';
+import { v4 as uuid } from 'uuid';
 
 interface EditorContentProps {
   content: string;
-  onChange: (content: string) => void;
-  onEditorReady?: (editor: any) => void;
-  settings?: {
-    hasCoverPage?: boolean;
-    coverPageText?: string;
-    hasWatermark?: boolean;
-    watermarkText?: string;
-    coverPageLogo?: File;
-  };
+  documentId: string;
+  onChange: (content: string, newDocumentId?: string) => void;
 }
 
 export function EditorContent({
   content,
   onChange,
-  onEditorReady,
-  settings = {}
 }: EditorContentProps) {
-  const { hasCoverPage, coverPageText, hasWatermark, watermarkText, coverPageLogo } = settings;
-  const contentRef = useRef(content);
-  const isInitialMount = useRef(true);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Document,
-      Paragraph,
-      Text,
-      Heading.configure({
-        levels: [1, 2, 3]
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph']
-      })
-    ],
-    editorProps: {
-      attributes: {
-        class: cn(
-          "prose prose-sm max-w-none focus:outline-none",
-          hasWatermark && "watermark-container"
-        )
-      }
-    },
-    onUpdate: ({ editor }) => {
-      const mainContent = extractMainContent(editor.getHTML());
-      onChange(mainContent);
-      contentRef.current = mainContent;
-    }
-  });
-
-  const extractMainContent = (html: string) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const mainContent = doc.querySelector('.document-content');
-    return mainContent ? mainContent.innerHTML : html;
-  };
-
-  const generateFullContent = useCallback(() => {
-    const mainContent = contentRef.current;
-    const coverPageStyles = `
-      <style>
-        @page {
-          margin: 0;
-          size: 8.5in 11in;
-        }
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        html, body {
-          height: 100%;
-          margin: 0;
-          padding: 0;
-        }
-        .editor-container {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-        }
-        .cover-page {
-          height: 100vh;
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: white;
-          position: relative;
-          page-break-after: always;
-          padding: 4rem 2rem;
-        }
-        .cover-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 2rem;
-          max-width: 600px;
-          width: 100%;
-        }
-        .logo-container {
-          margin-bottom: 3rem;
-          width: 180px;
-          height: 180px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .logo-container img {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-        }
-        .title-section {
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          align-items: center;
-        }
-        .cover-title {
-          font-size: 48px;
-          font-weight: 700;
-          color: #000;
-          letter-spacing: -0.02em;
-          line-height: 1.2;
-          margin: 0;
-        }
-        .document-type {
-          font-size: 24px;
-          color: #666;
-          margin-top: 0.5rem;
-          font-weight: 500;
-        }
-        .document-date {
-          font-size: 16px;
-          color: #666;
-          margin-top: 0.5rem;
-        }
-        .document-content {
-          flex: 1;
-          min-height: 100vh;
-          padding: 3rem 2rem;
-          background: white;
-          page-break-before: always;
-        }
-        ${hasWatermark ? `
-          .watermark-container {
-            position: relative;
-          }
-          .watermark-container::before {
-            content: "${watermarkText || 'DRAFT'}";
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 120px;
-            font-weight: bold;
-            color: rgba(0, 0, 0, 0.08);
-            white-space: nowrap;
-            pointer-events: none;
-            z-index: 1;
-            width: 100%;
-            text-align: center;
-          }
-        ` : ''}
-        @media print {
-          .cover-page {
-            height: 100vh;
-            page-break-after: always;
-          }
-          .document-content {
-            page-break-before: always;
-          }
-        }
-      </style>
-    `;
-
-    const coverPageHtml = hasCoverPage ? `
-      <div class="cover-page">
-        <div class="cover-content">
-          ${coverPageLogo ? `
-            <div class="logo-container">
-              <img src="${URL.createObjectURL(coverPageLogo)}" alt="Cover Logo" />
-            </div>
-          ` : ''}
-          <div class="title-section">
-            <h1 class="cover-title">${coverPageText || 'Document Title'}</h1>
-            <div class="document-type">SERVICE</div>
-            <div class="document-date">
-              ${format(new Date(), 'MMMM d, yyyy')}
-            </div>
-          </div>
-        </div>
-      </div>
-    ` : '';
-
-    return `
-      <div class="editor-container ${hasWatermark ? 'watermark-container' : ''}">
-        ${coverPageStyles}
-        ${coverPageHtml}
-        <div class="document-content">
-          ${mainContent}
-        </div>
-      </div>
-    `;
-  }, [hasCoverPage, coverPageText, coverPageLogo, hasWatermark, watermarkText]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    if (editor) {
-      if (isInitialMount.current) {
-        isInitialMount.current = false;
-        contentRef.current = content;
-        editor.commands.setContent(generateFullContent());
-      }
-      if (onEditorReady) {
-        onEditorReady(editor);
-      }
-    }
-  }, [editor, content, generateFullContent, onEditorReady]);
+    if (containerRef.current && !isInitialized.current) {
+      const frame = document.createElement('iframe');
+      frame.className = 'w-full h-full border-0';
+      containerRef.current.innerHTML = '';
+      containerRef.current.appendChild(frame);
+      frameRef.current = frame;
 
-  useEffect(() => {
-    if (editor && !isInitialMount.current) {
-      editor.commands.setContent(generateFullContent());
+      if (frame.contentWindow) {
+        frame.contentWindow.document.open();
+        frame.contentWindow.document.write(content);
+        frame.contentWindow.document.close();
+
+        // Add editing styles
+        const editStyle = document.createElement('style');
+        editStyle.textContent = `
+          [contenteditable=true] { 
+            outline: none !important;
+          }
+          [contenteditable=true]:hover {
+            cursor: text;
+          }
+          [contenteditable=true]:focus {
+            background: rgba(0, 0, 0, 0.02);
+          }
+        `;
+        frame.contentWindow.document.head.appendChild(editStyle);
+
+        // Make elements editable on click
+        frame.contentWindow.document.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          if (target && 
+              !target.closest('.section-title') && 
+              !target.closest('h1, h2')) {
+            if (!target.isContentEditable) {
+              target.contentEditable = 'true';
+              target.focus();
+            }
+          }
+        });
+
+        // Handle content changes
+        let debounceTimer: any;
+        frame.contentWindow.document.addEventListener('input', () => {
+          // Save current selection state
+          const saveSelection = () => {
+            const sel = frame.contentWindow?.getSelection();
+            if (sel && sel.rangeCount > 0) {
+              return sel.getRangeAt(0);
+            }
+            return null;
+          };
+
+          // Restore selection state
+          const restoreSelection = (range: Range | null) => {
+            if (range && frame.contentWindow) {
+              const sel = frame.contentWindow.getSelection();
+              if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+            }
+          };
+
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            const savedRange = saveSelection();
+            const currentContent = frame.contentWindow?.document.documentElement.outerHTML || '';
+            
+            if (currentContent !== content) {
+              // Generate new UUID on content change
+              const newDocumentId = uuid();
+              
+              // Update URL with new UUID
+              window.history.pushState({}, '', `/documents/${newDocumentId}`);
+              
+              // Notify parent with new content and UUID
+              onChange(currentContent, newDocumentId);
+            }
+
+            // Restore the selection after change
+            if (savedRange) {
+              requestAnimationFrame(() => {
+                restoreSelection(savedRange);
+              });
+            }
+          }, 100);
+        });
+
+        // Prevent form submission
+        frame.contentWindow.document.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+          }
+        });
+
+        isInitialized.current = true;
+      }
     }
-  }, [hasCoverPage, coverPageText, coverPageLogo, hasWatermark, watermarkText, editor, generateFullContent]);
+  }, []);
+
+  // Update content only when needed
+  useEffect(() => {
+    if (frameRef.current?.contentWindow && isInitialized.current) {
+      const currentContent = frameRef.current.contentWindow.document.documentElement.outerHTML;
+      if (currentContent !== content) {
+        // Save the current selection if any
+        const selection = frameRef.current.contentWindow.getSelection();
+        const savedRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        
+        // Update the content
+        frameRef.current.contentWindow.document.body.innerHTML = new DOMParser()
+          .parseFromString(content, 'text/html')
+          .body.innerHTML;
+
+        // Restore selection if it existed
+        if (savedRange && selection) {
+          requestAnimationFrame(() => {
+            selection.removeAllRanges();
+            selection.addRange(savedRange);
+          });
+        }
+      }
+    }
+  }, [content]);
 
   return (
-    <div className="flex-1 overflow-auto bg-white">
-      <div className="mx-auto max-w-4xl h-full">
-        <TipTapEditorContent editor={editor} />
-      </div>
-    </div>
+    <div
+      ref={containerRef}
+      className="absolute inset-0 bg-white"
+    />
   );
 }

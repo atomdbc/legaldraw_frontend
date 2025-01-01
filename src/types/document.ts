@@ -446,6 +446,17 @@ export interface DocumentStats {
     count: number;
   }[];
 }
+export interface PublishDraftRequest {
+  new_document_id: string;   // UUID for new published version
+  content: string;          // HTML content
+  status: string;          // Status - default "COMPLETED"
+  document_metadata: {
+    published_at: string;      // ISO string
+    published_by: string;      // user_id
+    original_document_id: string;  // base document id
+  }
+}
+
 
 export interface DocumentHistory {
   document_id: string;

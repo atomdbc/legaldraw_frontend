@@ -1,13 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { EditorContent } from './EditorContent';
-import { EditorHeader } from './EditorHeader';
-import { EditorToolbar } from './EditorToolbar';
-import { EditorSettings } from './EditorSettings';
 import { useToast } from '@/hooks/use-toast';
-import { Editor } from '@tiptap/react';
-import debounce from 'lodash/debounce';
-import { FileText, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Save, RotateCcw } from 'lucide-react';
+import useDocument from '@/hooks/useDocument';
 
 interface DocumentEditorProps {
   content: string;
@@ -15,188 +11,108 @@ interface DocumentEditorProps {
   documentType: string;
   version: string;
   onSave: (content: string) => Promise<void>;
-  settings: {
-    hasCoverPage: boolean;
-    coverPageText: string;
-    hasWatermark: boolean;
-    watermarkText: string;
-    coverPageLogo?: File | null;
-  };
-  onSettingsChange: (settings: Partial<DocumentEditorProps['settings']>) => void;
-  onLogoUpload: (file: File) => void;
-  onLogoRemove: () => void;
-  onTabChange?: (tab: string) => void;
 }
 
-export function DocumentEditor({
+export default function DocumentEditor({
   content,
   documentId,
   documentType,
   version,
   onSave,
-  settings: initialSettings,
-  onSettingsChange,
-  onLogoUpload,
-  onLogoRemove,
-  onTabChange
 }: DocumentEditorProps) {
   const { toast } = useToast();
   const [editorContent, setEditorContent] = useState(content);
   const [isDirty, setIsDirty] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [settings, setSettings] = useState(initialSettings);
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const [showPreviewAlert, setShowPreviewAlert] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const { publishDraft } = useDocument();
 
-  // Reset alert when document changes
-  useEffect(() => {
-    setShowPreviewAlert(false);
-  }, [documentId]);
+  const handleContentChange = useCallback((newContent: string, newDocumentId?: string) => {
+    setEditorContent(newContent);
+    setIsDirty(true);
+  }, []);
 
-  const notifyPreviewNeeded = useCallback(() => {
-    // Show toast
-    toast({
-      title: "Switch to Preview",
-      description: (
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          <span>Click Preview tab to see your changes</span>
-        </div>
-      ),
-      duration: 5000,
-    });
+  const handlePublish = async () => {
+    if (!isDirty) return;
     
-    // Show alert
-    setShowPreviewAlert(true);
-    
-    // Optionally auto-switch to preview tab
-    // if (onTabChange) {
-    //   onTabChange('preview');
-    // }
-  }, [toast]);
-
-  const debouncedContentChange = useCallback(
-    debounce((newContent: string) => {
-      setEditorContent(newContent);
-      setIsDirty(true);
-    }, 300),
-    []
-  );
-
-  const handleSettingsChange = useCallback((changes: Partial<typeof settings>) => {
-    requestAnimationFrame(() => {
-      setSettings(prev => {
-        const newSettings = { ...prev, ...changes };
-        setIsDirty(true);
-        onSettingsChange(newSettings);
-        
-        // Show preview notification for relevant changes
-        if ('hasCoverPage' in changes || 
-            'coverPageText' in changes || 
-            'coverPageLogo' in changes ||
-            'hasWatermark' in changes || 
-            'watermarkText' in changes) {
-          notifyPreviewNeeded();
-        }
-        
-        return newSettings;
-      });
-    });
-  }, [onSettingsChange, notifyPreviewNeeded]);
-
-  const handleLogoUpload = useCallback((file: File) => {
-    onLogoUpload(file);
-    notifyPreviewNeeded();
-  }, [onLogoUpload, notifyPreviewNeeded]);
-
-  const handleContentChange = useCallback((newContent: string) => {
-    debouncedContentChange(newContent);
-  }, [debouncedContentChange]);
-
-  const handleSave = async () => {
     try {
-      setIsSaving(true);
-      await onSave(editorContent);
-      setIsDirty(false);
-      setShowPreviewAlert(false);
-      toast({
-        title: "Changes saved",
-        description: "Document updated successfully"
+      setIsPublishing(true);
+      
+      // Call publish instead of save
+      const publishedDoc = await publishDraft(documentId, editorContent, version);
+      
+      // Redirect to the new document
+      if (publishedDoc?.document_id) {
+        window.location.href = `/documents/${publishedDoc.document_id}`;
+      }
+      
+    } catch (error: any) {
+      // Better error logging
+      console.error('Publishing failed:', {
+        error,
+        message: error.message,
+        details: error.error,
+        content: editorContent.substring(0, 100) // Log first 100 chars of content
       });
-    } catch (error) {
+      
       toast({
         variant: "destructive",
-        title: "Error saving",
-        description: "Failed to save changes"
+        title: "Publishing Failed",
+        description: error.error?.message || "Failed to publish document changes"
       });
     } finally {
-      setIsSaving(false);
+      setIsPublishing(false);
     }
-  };
+};
 
   const handleDiscard = useCallback(() => {
     setEditorContent(content);
-    setSettings(initialSettings);
-    onSettingsChange(initialSettings);
-    onLogoRemove();
     setIsDirty(false);
-    setShowPreviewAlert(false);
     toast({
       title: "Changes discarded"
     });
-  }, [content, initialSettings, onSettingsChange, onLogoRemove]);
+  }, [content]);
 
   return (
-    <div className="flex h-full">
-      <div className="flex-1 flex flex-col min-w-0">
-        <EditorHeader
-          isDirty={isDirty}
-          isSaving={isSaving}
-          documentType={documentType}
-          version={version}
-          onSave={handleSave}
-          onDiscard={handleDiscard}
-        />
-        <EditorToolbar editor={editor} />
-        
-        {/* Preview Alert */}
-        {showPreviewAlert && (
-          <Alert className="mx-4 mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center gap-2">
-              <span>Switch to</span>
-              <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded">
-                <FileText className="h-4 w-4" />
-                <span>Preview</span>
-              </div>
-              <span>tab to see your changes</span>
-            </AlertDescription>
-          </Alert>
-        )}
-        
+    <div className="h-full w-full flex flex-col">
+      <div className="w-full border-b bg-white px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold">{documentType}</h1>
+            <span className="text-sm text-muted-foreground">v{version}</span>
+            {isDirty && <span className="text-sm text-yellow-600">(Unsaved changes)</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            {isDirty && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDiscard}
+                  className="gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Discard Changes
+                </Button>
+                <Button
+                  onClick={handlePublish}
+                  disabled={isPublishing || !isDirty}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {isPublishing ? 'Publishing...' : 'Publish Changes'}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex-1 relative">
         <EditorContent
           content={editorContent}
+          documentId={documentId}
           onChange={handleContentChange}
-          settings={settings}
-          onEditorReady={setEditor}
-        />
-      </div>
-      <div className="w-80 flex-none bg-gray-50/50 border-l">
-        <EditorSettings
-          {...settings}
-          isDirty={isDirty}
-          onSave={handleSave}
-          onReset={handleDiscard}
-          onCoverPageChange={(enabled) => 
-            handleSettingsChange({ hasCoverPage: enabled })}
-          onCoverPageTextChange={(text) =>
-            handleSettingsChange({ coverPageText: text })}
-          onLogoUpload={handleLogoUpload}
-          onLogoRemove={onLogoRemove}
-          onWatermarkChange={(enabled) =>
-            handleSettingsChange({ hasWatermark: enabled })}
-          onWatermarkTextChange={(text) =>
-            handleSettingsChange({ watermarkText: text })}
         />
       </div>
     </div>

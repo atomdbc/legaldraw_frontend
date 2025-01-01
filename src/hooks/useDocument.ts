@@ -22,7 +22,8 @@ export function useDocument() {
   const { toast } = useToast();
   const [draftVersion, setDraftVersion] = useState<number>(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
+  const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success' | 'error'>('idle');
+
   // Simple rate limiting
   const lastFetchTime = useRef<number>(0);
   const MIN_FETCH_INTERVAL = 60000; // 1 minute
@@ -70,6 +71,37 @@ export function useDocument() {
       setIsLoading(false);
     }
   }, [isLoading, documents.length, toast]);
+
+  // In useDocument hook
+const publishDraft = useCallback(async (documentId: string, content: string, version: string) => {
+  if (publishStatus === 'publishing') return;
+  
+  setPublishStatus('publishing');
+  try {
+      // Call API with simpler structure
+      const response = await documentApi.publishDraft(documentId, content, version);
+      setPublishStatus('success');
+      setHasUnsavedChanges(false);
+      
+      toast({ 
+          title: "Published Successfully", 
+          description: "Document has been published with a new version" 
+      });
+
+      return response;
+  } catch (error: any) {
+      setPublishStatus('error');
+      console.error('Publish error details:', error);
+      
+      toast({
+          variant: "destructive",
+          title: "Publishing Failed",
+          description: error.message || 'Failed to publish document'
+      });
+      throw error;
+  }
+}, [publishStatus, toast]);
+
 
   // Generate Document
   const generateDocument = useCallback(async (data: GenerateDocumentRequest) => {
@@ -149,71 +181,6 @@ export function useDocument() {
 
 
 
-  // Update Document
-  
-
-  // Get Document History
-  const getDocumentHistory = useCallback(async (documentId: string) => {
-    if (isLoading) return;
-    
-    setIsLoading(true);
-    try {
-      const response = await documentApi.getDocumentHistory(documentId);
-      setError(null);
-      return response;
-    } catch (error: any) {
-      const err = error instanceof Error ? error : new Error('Failed to fetch document history');
-      setError(err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err.message
-      });
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, toast]);
-
-  const publishDraft = useCallback(async (documentId: string) => {
-    setIsLoading(true);
-    try {
-      const response = await documentApi.publishDraft(documentId);
-      setDraftVersion(0); // Reset draft version
-      setHasUnsavedChanges(false);
-      toast({
-        title: "Success",
-        description: "Changes published successfully"
-      });
-      return response;
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to publish changes"
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-  
-  // For discarding draft
-
-  // For getting draft status
-  const getDraftStatus = useCallback(async (documentId: string) => {
-    try {
-      const response = await documentApi.getDraftStatus(documentId);
-      setDraftVersion(response.version);
-      setHasUnsavedChanges(response.has_unsaved_changes);
-      return response;
-    } catch (error: any) {
-      console.error("Failed to get draft status:", error);
-    }
-  }, []);
-
-  // Search Documents
-
 
   // Get Document Stats
   const getStats = useCallback(async () => {
@@ -253,13 +220,13 @@ export function useDocument() {
     generateDocument,
     getDocument,
     getDocumentContent,
-    getDocumentHistory,
     getStats,
     draftVersion,
     hasUnsavedChanges,
     setHasUnsavedChanges,
-    publishDraft,
-  getDraftStatus,
+    publishStatus,
+  publishDraft,
+
   };
 }
 
