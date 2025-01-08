@@ -146,6 +146,10 @@ export const Pricing = () => {
                 <Check className="w-5 h-5 text-green-500" />
                 Basic AI assistance
               </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-500" />
+                Cover Page
+              </li>
             </ul>
           </CardContent>
           <CardFooter className="p-6 pt-0">

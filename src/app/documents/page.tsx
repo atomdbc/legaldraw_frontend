@@ -36,7 +36,7 @@ export default function DocumentsPage() {
     doc.document_type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const documentsByMonth = filteredDocuments.reduce((acc, doc) => {
+  const documentsByMonth = filteredDocuments.reduce<Record<string, typeof filteredDocuments>>((acc, doc) => {
     const monthYear = format(new Date(doc.generated_at), 'MMMM yyyy');
     if (!acc[monthYear]) {
       acc[monthYear] = [];

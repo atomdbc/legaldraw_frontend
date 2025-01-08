@@ -7,6 +7,7 @@ import { ShareModal } from '@/components/documents/preview/ShareModal';
 import { useToast } from '@/hooks/use-toast';
 import { useWizardNavigation } from '@/hooks/useWizardNavigation';
 import { useDocumentProgress } from '@/hooks/useDocumentProgress';
+import { useDocument } from '@/hooks/useDocument';
 import { useRouter } from 'next/navigation';
 import { documentApi } from '@/lib/api/document';
 import { Card } from '@/components/ui/card';
@@ -18,7 +19,6 @@ interface PreviewClientProps {
   documentId?: string;
 }
 
-
 export function PreviewClient({ documentType, documentId }: PreviewClientProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -27,7 +27,7 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [documentContent, setDocumentContent] = useState<any>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
-  
+  const { downloadDocument, isDownloading } = useDocument();
 
   useEffect(() => {
     const loadDocument = async () => {
@@ -91,11 +91,11 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
     }
   };
 
-  const handleDownload = async () => {
-    // Download logic here
-    console.log("Downloading document...");
+  const handleDownload = () => {
+    if (documentId) {
+      downloadDocument(documentId);
+    }
   };
-
 
   return (
     <DocumentWizard
@@ -113,9 +113,14 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
         <div className="flex flex-col">
           <div className="flex items-center justify-end gap-2 mb-2">
             <ShareModal documentId={documentId || ''} />
-            <Button variant="outline" size="sm" onClick={handleDownload}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownload}
+              disabled={isDownloading}
+            >
               <Download className="h-4 w-4 mr-2" />
-              Download
+              {isDownloading ? 'Downloading...' : 'Download'}
             </Button>
           </div>
           <Card className="flex-1 h-full overflow-hidden bg-white">

@@ -2,6 +2,7 @@
 
 import { authApi } from './auth';
 import { v4 as uuidv4 } from 'uuid';
+import Cookies from 'js-cookie';
 import type {
   DocumentResponse,
   DocumentListResponse,
@@ -17,8 +18,6 @@ export class DocumentApiError extends Error {
   constructor(public error: { status: number; message: string; code?: string }) {
     super(error.message);
     this.name = 'DocumentApiError';
-    
-    // Log the actual error details for debugging
     console.log('DocumentApiError Details:', {
       status: error.status,
       message: error.message,
@@ -38,12 +37,7 @@ export const documentApi = {
   async listDocuments(skip: number = 0, limit: number = 100): Promise<DocumentListResponse> {
     try {
       const response = await authApi.authenticatedRequest<DocumentListResponse>(
-        `${API_BASE_URL}/api/documents/?skip=${skip}&limit=${limit}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
-        }
+        `${API_BASE_URL}/api/documents/?skip=${skip}&limit=${limit}`
       );
       return response;
     } catch (error: any) {
@@ -55,40 +49,27 @@ export const documentApi = {
     }
   },
 
-  async generateDocument(data: GenerateDocumentRequest): Promise<DocumentResponse> {
+  async downloadDocument(documentId: string): Promise<Blob> {
     try {
-      const response = await authApi.authenticatedRequest<DocumentResponse>(
-        `${API_BASE_URL}/api/documents/generate`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(data)
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+          'Authorization': `Bearer ${Cookies.get('accessToken')}`
+        },
+        credentials: 'include'
+      });
   
-      return response;
-    } catch (error: any) {
-      // Log the raw error for debugging
-      console.log('Raw generate document error:', error);
-  
-      if (error.status === 422) {
-        // Handle validation errors
-        const validationErrors = await error.json?.() || {};
-        throw new DocumentApiError({
-          status: 422,
-          message: validationErrors.detail || 'Invalid document data',
-          code: 'VALIDATION_ERROR',
-          errors: validationErrors
-        });
+      if (!response.ok) {
+        throw new Error('Failed to download document');
       }
   
+      return await response.blob();
+    } catch (error: any) {
       throw new DocumentApiError({
         status: error?.error?.status || 500,
-        message: error?.error?.message || error.message || 'Failed to generate document',
-        code: error?.error?.code || 'GENERATE_DOCUMENT_ERROR'
+        message: error.message || 'Failed to download document',
+        code: 'DOWNLOAD_ERROR'
       });
     }
   },
@@ -96,26 +77,14 @@ export const documentApi = {
   async getDocument(documentId: string): Promise<DocumentContentResponse> {
     try {
       const response = await authApi.authenticatedRequest<DocumentContentResponse>(
-        `${API_BASE_URL}/api/documents/${documentId}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
-        }
+        `${API_BASE_URL}/api/documents/${documentId}`
       );
       return response;
     } catch (error: any) {
-      if (error?.error?.status === 404) {
-        throw new DocumentApiError({
-          status: 404,
-          message: 'Document not found',
-          code: 'DOCUMENT_NOT_FOUND'
-        });
-      }
       throw new DocumentApiError({
-        status: error?.error?.status || 500,
-        message: error.message || 'Failed to fetch document',
-        code: 'GET_DOCUMENT_ERROR'
+        status: error?.error?.status === 404 ? 404 : 500,
+        message: error?.error?.status === 404 ? 'Document not found' : 'Failed to fetch document',
+        code: error?.error?.status === 404 ? 'DOCUMENT_NOT_FOUND' : 'GET_DOCUMENT_ERROR'
       });
     }
   },
@@ -123,38 +92,22 @@ export const documentApi = {
   async getDocumentContent(documentId: string): Promise<DocumentContentResponse> {
     try {
       const response = await authApi.authenticatedRequest<DocumentContentResponse>(
-        `${API_BASE_URL}/api/documents/${documentId}/content`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
-        }
+        `${API_BASE_URL}/api/documents/${documentId}/content`
       );
       return response;
     } catch (error: any) {
-      if (error?.error?.status === 404) {
-        throw new DocumentApiError({
-          status: 404,
-          message: 'Document content not found',
-          code: 'DOCUMENT_CONTENT_NOT_FOUND'
-        });
-      }
       throw new DocumentApiError({
-        status: error?.error?.status || 500,
-        message: error.message || 'Failed to fetch document content',
-        code: 'GET_CONTENT_ERROR'
+        status: error?.error?.status === 404 ? 404 : 500,
+        message: error?.error?.status === 404 ? 'Document content not found' : 'Failed to fetch content',
+        code: error?.error?.status === 404 ? 'DOCUMENT_CONTENT_NOT_FOUND' : 'GET_CONTENT_ERROR'
       });
     }
   },
+
   async getDocumentStats(): Promise<DocumentStats> {
     try {
       const response = await authApi.authenticatedRequest<DocumentStats>(
-        `${API_BASE_URL}/api/documents/stats/overview`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
-        }
+        `${API_BASE_URL}/api/documents/stats/overview`
       );
       return response;
     } catch (error: any) {
@@ -165,6 +118,41 @@ export const documentApi = {
       });
     }
   },
+  
+  async downloadDocument(documentId: string): Promise<Blob> {
+    try {
+      // Get token from cookie using provided cookie management
+      const token = Cookies.get('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+  
+      const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include' // Important: include credentials for cookies
+      });
+  
+      if (!response.ok) {
+        // Handle error responses
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to download document');
+      }
+  
+      // Get blob data directly from response
+      return await response.blob();
+    } catch (error: any) {
+      throw new DocumentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to download document',
+        code: 'DOWNLOAD_ERROR'
+      });
+    }
+  },
+
 
   async publishDraft(
     documentId: string, 
@@ -172,11 +160,9 @@ export const documentApi = {
     version: string
   ): Promise<DocumentResponse> {
     try {
-      const newDocumentId = uuidv4();
-      
       const publishData: PublishDraftRequest = {
-        new_document_id: newDocumentId,
-        content: content,
+        new_document_id: uuidv4(),
+        content,
         status: "COMPLETED",
         document_metadata: {
           published_at: new Date().toISOString(),
@@ -184,28 +170,22 @@ export const documentApi = {
           original_document_id: documentId,
         }
       };
-  
+
       const response = await authApi.authenticatedRequest<DocumentResponse>(
         `${API_BASE_URL}/api/documents/${documentId}/publish`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(publishData)
         }
       );
       return response;
     } catch (error: any) {
-      console.error('Publish error:', error);
       throw new DocumentApiError({
         status: error?.error?.status || 500,
-        message: error?.error?.message || error.message || 'Failed to publish draft',
+        message: error.message || 'Failed to publish draft',
         code: 'PUBLISH_DRAFT_ERROR'
       });
     }
   }
-
 };
-

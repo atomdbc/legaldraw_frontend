@@ -10,6 +10,8 @@ import type {
   DocumentContentResponse,
   DocumentStats,
 } from '@/types/document';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 
 export function useDocument() {
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
@@ -23,6 +25,7 @@ export function useDocument() {
   const [draftVersion, setDraftVersion] = useState<number>(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success' | 'error'>('idle');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Simple rate limiting
   const lastFetchTime = useRef<number>(0);
@@ -71,6 +74,45 @@ export function useDocument() {
       setIsLoading(false);
     }
   }, [isLoading, documents.length, toast]);
+
+  const downloadDocument = useCallback(async (documentId: string) => {
+    if (isDownloading || !documentId) return;
+    
+    setIsDownloading(true);
+    try {
+      const pdfBlob = await documentApi.downloadDocument(documentId);
+      
+      // Create URL from blob
+      const url = window.URL.createObjectURL(pdfBlob);
+      
+      // Create link and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `document-${documentId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+  
+      toast({
+        title: "Success",
+        description: "Document download started"
+      });
+    } catch (error: any) {
+      console.error('Download error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to download document"
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [isDownloading, toast]);
 
   // In useDocument hook
 const publishDraft = useCallback(async (documentId: string, content: string, version: string) => {
@@ -214,6 +256,7 @@ const publishDraft = useCallback(async (documentId: string, content: string, ver
     documentStats,
     isLoading,
     error,
+    isDownloading,
     
     // Actions
     fetchDocuments,
@@ -226,6 +269,7 @@ const publishDraft = useCallback(async (documentId: string, content: string, ver
     setHasUnsavedChanges,
     publishStatus,
   publishDraft,
+  downloadDocument,
 
   };
 }

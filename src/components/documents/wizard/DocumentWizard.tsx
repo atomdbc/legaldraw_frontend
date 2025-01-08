@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { WizardSteps, Step } from '@/components/documents/ui/WizardSteps';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Save, Sparkles } from 'lucide-react';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const wizardSteps: Omit<Step, 'status'>[] = [

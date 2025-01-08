@@ -480,11 +480,43 @@ export interface PartyUpdate {
 
 export interface GenerateDocumentRequest {
   template_id: string;
-  document_type: DocumentType;
-  parties: PartyBackend[];
-  variables: NDAVariables;
+  document_type: string;
+  parties: any[];
+  variables: Partial<DocumentVariables>;
   effective_date?: string;
+  settings: {
+      cover_page: {
+          enabled: boolean;
+          watermark: string;
+          logo_enabled: boolean;
+      };
+      header_footer: {
+          enabled: boolean;
+          header_text: string;
+          footer_text: string;
+      };
+      styling: {
+          font_family: string;
+          primary_color: string;
+          secondary_color: string;
+      };
+  };
 }
+
+export const DEFAULT_DOCUMENT_SETTINGS: DocumentSettings = {
+  cover_page: {
+    enabled: true,
+    title: undefined,
+    subtitle: undefined
+  },
+  watermark: {
+    enabled: true,
+    text: "CONFIDENTIAL",
+    opacity: 0.1,
+    color: "rgba(128, 128, 128, 0.05)",
+    angle: -45
+  }
+};
 
 export interface PartyBackend {
   name: string;
@@ -503,7 +535,24 @@ export interface AddressBackend {
   country: string;
 }
 
+export interface DocumentSettings {
+  cover_page: CoverPageSettings;
+  watermark: WatermarkSettings;
+}
 
+export interface CoverPageSettings {
+  enabled: boolean;
+  title?: string;  
+  subtitle?: string;
+}
+
+export interface WatermarkSettings {
+  enabled: boolean;
+  text: string;     
+  opacity?: number; 
+  color?: string;   
+  angle?: number;   
+}
 
 export enum DocumentStatus {
   DRAFT = 'DRAFT',

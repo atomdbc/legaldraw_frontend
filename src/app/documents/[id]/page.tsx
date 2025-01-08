@@ -31,55 +31,28 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const resolvedParams = use(params);
   const documentId = resolvedParams.id;
   
-  const { getDocument, getDocumentContent, isLoading } = useDocument();
+  const { 
+    getDocument, 
+    getDocumentContent, 
+    isLoading,
+    downloadDocument, // Add the download hook
+    isDownloading // Add downloading state
+  } = useDocument();
   const [document, setDocument] = useState<DocumentContentResponse | null>(null);
   const [content, setContent] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
   const [error, setError] = useState<DocumentApiError | null>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
-  const handleDownload = useCallback(() => {
-    if (!content) return;
-
+  const handleDownload = useCallback(async () => {
+    if (!documentId) return;
+    
     try {
-      // Create a full HTML document with proper structure
-      const fullHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${document?.document_type || 'Document'}</title>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            line-height: 1.5;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="document-content">
-        ${content}
-    </div>
-</body>
-</html>`;
-
-      const blob = new Blob([fullHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = window.document.createElement('a');
-      a.href = url;
-      a.download = `${document?.document_type?.toLowerCase() || 'document'}-${documentId}.html`;
-      window.document.body.appendChild(a);
-      a.click();
-      window.document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadDocument(documentId);
     } catch (error) {
       console.error('Error downloading document:', error);
     }
-  }, [content, documentId, document?.document_type]);
+  }, [documentId, downloadDocument]);
 
   const handleSave = async (newContent: string) => {
     setContent(newContent);
@@ -89,7 +62,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const fetchDocument = async () => {
     try {
       const doc = await getDocument(documentId);
-      setDocument(doc);
+      setDocument(doc ?? null);
       
       const contentResponse = await getDocumentContent(documentId);
       const baseContent = contentResponse?.content || '';
@@ -121,8 +94,9 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
   if (!document) return <LoadingSkeleton />;
 
-  const documentStatus = document.status?.toLowerCase() || 'draft';
-  const statusColors = {
+  type DocumentStatus = 'draft' | 'pending' | 'completed';
+  const documentStatus = (document.status?.toLowerCase() || 'draft') as DocumentStatus;
+  const statusColors: Record<DocumentStatus, string> = {
     draft: 'bg-gray-100 text-gray-700',
     pending: 'bg-yellow-100 text-yellow-700',
     completed: 'bg-green-100 text-green-700'
@@ -146,10 +120,15 @@ export default function DocumentPage({ params }: DocumentPageProps) {
               </span>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
+          <Button 
+      variant="outline" 
+      size="sm" 
+      onClick={handleDownload}
+      disabled={isDownloading}
+    >
+      <Download className="h-4 w-4 mr-2" />
+      {isDownloading ? 'Downloading...' : 'Download'}
+    </Button>
         </div>
       </header>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { useToast } from '@/hooks/use-toast';
-import { DocumentType } from '@/types/document';
+import { DocumentSettings, DocumentType } from '@/types/document';
 import { Party } from '@/types/party';
 
 const STORAGE_KEY_PREFIX = 'document_progress_';
@@ -12,7 +12,7 @@ const DEBOUNCE_MS = 500;
 export interface DocumentProgressData {
   parties?: Party[];
   variables?: Record<string, any>;
-  settings?: Record<string, any>;
+  settings?: DocumentSettings;  // Add this
   created_at?: string;
   type?: DocumentType;
 }

@@ -164,18 +164,37 @@ export function DocumentReviewModal({
           country: party.address.country
         }
       }));
+
+      const documentSettings = {
+        cover_page: {
+            enabled: true,  // You can make this configurable
+            watermark: documentType === 'SERVICE' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL',
+            logo_enabled: false  // Can be made configurable
+        },
+        header_footer: {
+            enabled: true,
+            header_text: documentType === 'SERVICE' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL & PROPRIETARY',
+            footer_text: "Page {page_number} of {total_pages}"
+        },
+        styling: {
+            font_family: "Arial, sans-serif",
+            primary_color: "#000080",
+            secondary_color: "#C0C0C0"
+        }
+    };
   
       const payload = {
         template_id: `${documentType.toLowerCase()}_template_v1`,
-        document_type: getDocumentType(documentType), // Will return 'SERVICE' for service docs
+        document_type: getDocumentType(documentType),
         parties: formattedParties,
         variables: documentData.variables,
-        effective_date: documentData.variables.effective_date
-      };
-  
-      console.log('Sending payload:', JSON.stringify(payload, null, 2));
-  
-      const response = await documentApi.generateDocument(payload);
+        effective_date: documentData.variables.effective_date,
+        settings: documentSettings  // Add settings to payload
+    };
+
+    console.log('Sending payload:', JSON.stringify(payload, null, 2));
+
+    const response = await documentApi.generateDocument(payload);
       
       if (response?.document_id) {
         toast({

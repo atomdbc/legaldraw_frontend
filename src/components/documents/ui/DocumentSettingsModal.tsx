@@ -6,36 +6,80 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
+import { DocumentSettings } from "@/types/document";
 
-interface DocumentSettingsProps {
+interface DocumentSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  hasCoverPage: boolean;
-  onCoverPageChange: (enabled: boolean) => void;
-  coverPageText: string;
-  onCoverPageTextChange: (text: string) => void;
-  onLogoUpload: (file: File) => void;
-  hasWatermark: boolean;
-  watermarkText: string;
-  onWatermarkChange: (enabled: boolean) => void;
-  onWatermarkTextChange: (text: string) => void;
+  settings: DocumentSettings;
+  onSettingsChange: (settings: DocumentSettings) => void;
 }
 
 export function DocumentSettingsModal({
   isOpen,
   onClose,
-  hasCoverPage,
-  onCoverPageChange,
-  coverPageText,
-  onCoverPageTextChange,
-  onLogoUpload,
-  hasWatermark,
-  watermarkText,
-  onWatermarkChange,
-  onWatermarkTextChange,
-}: DocumentSettingsProps) {
-  const handleSaveClick = () => {
-    onClose();
+  settings,
+  onSettingsChange,
+}: DocumentSettingsModalProps) {
+  const handleCoverPageChange = (enabled: boolean) => {
+    onSettingsChange({
+      ...settings,
+      cover_page: {
+        ...settings.cover_page,
+        enabled
+      }
+    });
+  };
+
+  const handleCoverPageTextChange = (title: string) => {
+    onSettingsChange({
+      ...settings,
+      cover_page: {
+        ...settings.cover_page,
+        title
+      }
+    });
+  };
+
+  const handleCoverPageSubtitleChange = (subtitle: string) => {
+    onSettingsChange({
+      ...settings,
+      cover_page: {
+        ...settings.cover_page,
+        subtitle
+      }
+    });
+  };
+
+  const handleWatermarkChange = (enabled: boolean) => {
+    onSettingsChange({
+      ...settings,
+      watermark: {
+        ...settings.watermark,
+        enabled
+      }
+    });
+  };
+
+  const handleWatermarkTextChange = (text: string) => {
+    onSettingsChange({
+      ...settings,
+      watermark: {
+        ...settings.watermark,
+        text
+      }
+    });
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      alert('File size should not exceed 5MB');
+      return;
+    }
+
+    // TODO: Handle logo upload
+    // This would typically involve uploading to your backend
+    // and getting back a URL to store in settings
   };
 
   return (
@@ -51,17 +95,29 @@ export function DocumentSettingsModal({
               <Label>Cover Page</Label>
               <p className="text-sm text-muted-foreground">Add a cover page to your document</p>
             </div>
-            <Switch checked={hasCoverPage} onCheckedChange={onCoverPageChange} />
+            <Switch 
+              checked={settings.cover_page.enabled} 
+              onCheckedChange={handleCoverPageChange} 
+            />
           </div>
 
-          {hasCoverPage && (
+          {settings.cover_page.enabled && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Cover Page Text</Label>
+                <Label>Title</Label>
                 <Input
-                  placeholder="Enter cover page text..."
-                  value={coverPageText}
-                  onChange={(e) => onCoverPageTextChange(e.target.value)}
+                  placeholder="Enter cover page title..."
+                  value={settings.cover_page.title || ''}
+                  onChange={(e) => handleCoverPageTextChange(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Subtitle</Label>
+                <Input
+                  placeholder="Enter cover page subtitle..."
+                  value={settings.cover_page.subtitle || ''}
+                  onChange={(e) => handleCoverPageSubtitleChange(e.target.value)}
                 />
               </div>
 
@@ -75,13 +131,7 @@ export function DocumentSettingsModal({
                     id="logo-upload"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                          alert('File size should not exceed 5MB');
-                          return;
-                        }
-                        onLogoUpload(file);
-                      }
+                      if (file) handleLogoUpload(file);
                     }}
                   />
                   <Button
@@ -110,21 +160,21 @@ export function DocumentSettingsModal({
               </p>
             </div>
             <Switch 
-              checked={hasWatermark} 
-              onCheckedChange={onWatermarkChange} 
+              checked={settings.watermark.enabled} 
+              onCheckedChange={handleWatermarkChange} 
             />
           </div>
 
-          {hasWatermark && (
+          {settings.watermark.enabled && (
             <div className="mt-4 space-y-2">
               <Label>Watermark Text</Label>
               <Input
                 placeholder="Enter watermark text (max 5 words)..."
-                value={watermarkText}
+                value={settings.watermark.text}
                 onChange={(e) => {
                   const words = e.target.value.split(' ');
                   if (words.length <= 5) {
-                    onWatermarkTextChange(e.target.value);
+                    handleWatermarkTextChange(e.target.value);
                   }
                 }}
                 maxLength={30}
@@ -140,7 +190,7 @@ export function DocumentSettingsModal({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSaveClick}>
+          <Button onClick={onClose}>
             Save Changes
           </Button>
         </DialogFooter>

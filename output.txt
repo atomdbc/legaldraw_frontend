@@ -82,9 +82,6 @@
 │   │   │   ├── editor
 │   │   │   │   ├── DocumentEditor
 │   │   │   │   │   ├── EditorContent.tsx
-│   │   │   │   │   ├── EditorHeader.tsx
-│   │   │   │   │   ├── EditorSettings.tsx
-│   │   │   │   │   ├── EditorToolbar.tsx
 │   │   │   │   │   └── index.tsx
 │   │   │   │   └── edit
 │   │   │   ├── forms
@@ -98,12 +95,12 @@
 │   │   │   │   └── ShareModal.tsx
 │   │   │   ├── ui
 │   │   │   │   ├── DocumentSettingsModal.tsx
-│   │   │   │   ├── PreviewFrame.tsx
 │   │   │   │   ├── WizardSteps.tsx
 │   │   │   │   └── custom-modal.tsx
 │   │   │   └── wizard
 │   │   │       ├── DocumentPreview.tsx
 │   │   │       ├── DocumentReviewModal.tsx
+│   │   │       ├── DocumentSettings.tsx
 │   │   │       ├── DocumentTypeSelector.tsx
 │   │   │       ├── DocumentVariables.tsx
 │   │   │       ├── DocumentWizard.tsx
@@ -116,6 +113,7 @@
 │   │   │   ├── Hero.tsx
 │   │   │   ├── HowItWorks.tsx
 │   │   │   ├── Navbar.tsx
+│   │   │   ├── PreviewContent.tsx
 │   │   │   ├── Pricing.tsx
 │   │   │   ├── TechStack.tsx
 │   │   │   ├── TrustSignals.tsx
@@ -130,6 +128,7 @@
 │   │       ├── button.tsx
 │   │       ├── calendar.tsx
 │   │       ├── card.tsx
+│   │       ├── color-picker.tsx
 │   │       ├── combobox.tsx
 │   │       ├── command.tsx
 │   │       ├── dialog.tsx
@@ -144,6 +143,7 @@
 │   │       ├── separator.tsx
 │   │       ├── sheet.tsx
 │   │       ├── skeleton.tsx
+│   │       ├── slider.tsx
 │   │       ├── switch.tsx
 │   │       ├── tabs.tsx
 │   │       ├── textarea.tsx

@@ -5,17 +5,37 @@ import { useRouter } from 'next/navigation';
 import { DocumentWizard } from "@/components/documents/wizard/DocumentWizard";
 import { DocumentVariables } from "@/components/documents/wizard/DocumentVariables";
 import { DocumentReviewModal } from "@/components/documents/wizard/DocumentReviewModal";
+import { DocumentSettings } from "@/components/documents/wizard/DocumentSettings"; // New component
 import { useToast } from "@/hooks/use-toast";
 import { useDocumentProgress } from "@/hooks/useDocumentProgress";
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DOCUMENT_TYPES } from '@/lib/utils/documentTypes';
-import { useWizardNavigation } from '@/hooks/useWizardNavigation';
 import { DocumentVariables as Variables } from "@/types/document";
 import { Dialog } from '@radix-ui/react-dialog';
 
 interface DocumentDetailsClientProps {
   initialType: string;
 }
+
+// Default document settings
+const getDefaultSettings = (documentType: string) => ({
+  cover_page: {
+    enabled: true,
+    watermark: documentType === 'service' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL',
+    logo_enabled: false
+  },
+  header_footer: {
+    enabled: true,
+    header_text: documentType === 'service' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL & PROPRIETARY',
+    footer_text: 'Page {page_number} of {total_pages}'
+  },
+  styling: {
+    font_family: 'Arial, sans-serif',
+    primary_color: '#000080',
+    secondary_color: '#C0C0C0'
+  }
+});
 
 export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProps) {
   const router = useRouter();
@@ -25,9 +45,11 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
   const [isLoading, setIsLoading] = useState(true);
   const [isValid, setIsValid] = useState(false);
   const [variables, setVariables] = useState<Partial<Variables>>({});
+  const [documentSettings, setDocumentSettings] = useState(getDefaultSettings(initialType));
   const [hasParties, setHasParties] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -53,6 +75,11 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
       if (progressData.data?.variables) {
         setVariables(progressData.data.variables);
       }
+
+      // Load saved settings if they exist
+      if (progressData.data?.settings) {
+        setDocumentSettings(progressData.data.settings);
+      }
       
       setIsLoading(false);
     };
@@ -62,6 +89,10 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
 
   const handleVariablesChange = (newVariables: Partial<Variables>) => {
     setVariables(newVariables);
+  };
+
+  const handleSettingsChange = (newSettings: any) => {
+    setDocumentSettings(newSettings);
   };
 
   const handleValidationChange = (validationState: boolean) => {
@@ -78,7 +109,8 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
         step: 3,
         data: {
           ...progressData?.data,
-          variables
+          variables,
+          settings: documentSettings // Save settings with progress
         }
       });
       
@@ -118,20 +150,39 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
       >
         <div className="space-y-6 p-6">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Document Details</h2>
+            <h2 className="text-2xl font-semibold tracking-tight">Document Configuration</h2>
             <p className="text-sm text-muted-foreground max-w-2xl">
-              Fill in the required information for your {initialType.toUpperCase()} document.
+              Configure your {initialType.toUpperCase()} document details and appearance.
             </p>
           </div>
 
-          <Card className="pt-6 overflow-hidden">
-            <DocumentVariables
-              documentType={initialType}
-              variables={variables}
-              onChange={handleVariablesChange}
-              onValidationChange={handleValidationChange}
-            />
-          </Card>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="details">Document Details</TabsTrigger>
+              <TabsTrigger value="appearance">Appearance & Settings</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details">
+              <Card className="pt-6 overflow-hidden">
+                <DocumentVariables
+                  documentType={initialType}
+                  variables={variables}
+                  onChange={handleVariablesChange}
+                  onValidationChange={handleValidationChange}
+                />
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="appearance">
+              <Card className="pt-6 overflow-hidden">
+                <DocumentSettings
+                  documentType={initialType}
+                  settings={documentSettings}
+                  onChange={handleSettingsChange}
+                />
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </DocumentWizard>
 
@@ -142,7 +193,8 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
           documentType={initialType as any}
           documentData={{
             parties: progressData?.data?.parties || [],
-            variables: variables
+            variables: variables,
+            settings: documentSettings // Pass settings to review modal
           }}
           isLoading={isSaving}
         />
