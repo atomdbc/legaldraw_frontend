@@ -54,20 +54,18 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
   }, [documentId, toast]);
 
   useEffect(() => {
-    // Add style to iframe once loaded
     const iframe = previewIframeRef.current;
     if (iframe?.contentWindow) {
       iframe.onload = () => {
         const doc = iframe.contentDocument;
         if (doc) {
-          // Add styles to ensure content fits and scrolls properly
           const style = doc.createElement('style');
           style.textContent = `
             body {
               margin: 0;
-              padding: 16px;
+              padding: 24px;
               box-sizing: border-box;
-              max-width: 800px;
+              max-width: 1000px; /* Increased from 800px */
               margin: 0 auto;
               overflow-x: hidden !important;
             }
@@ -76,6 +74,11 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
               margin: 0 auto !important;
               box-shadow: none !important;
               padding: 0 !important;
+            }
+            /* Add better typography */
+            p, ul, ol {
+              line-height: 1.6;
+              margin-bottom: 1em;
             }
           `;
           doc.head.appendChild(style);

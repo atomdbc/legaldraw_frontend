@@ -50,29 +50,29 @@ export const documentApi = {
   },
 
   async downloadDocument(documentId: string): Promise<Blob> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/pdf',
-          'Authorization': `Bearer ${Cookies.get('accessToken')}`
-        },
-        credentials: 'include'
-      });
-  
-      if (!response.ok) {
-        throw new Error('Failed to download document');
-      }
-  
-      return await response.blob();
-    } catch (error: any) {
-      throw new DocumentApiError({
-        status: error?.error?.status || 500,
-        message: error.message || 'Failed to download document',
-        code: 'DOWNLOAD_ERROR'
-      });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/pdf',
+        'Authorization': `Bearer ${Cookies.get('accessToken')}`
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download document');
     }
-  },
+
+    return await response.blob();
+  } catch (error: any) {
+    throw new DocumentApiError({
+      status: error?.error?.status || 500,
+      message: error.message || 'Failed to download document',
+      code: 'DOWNLOAD_ERROR'
+    });
+  }
+},
 
   async getDocument(documentId: string): Promise<DocumentContentResponse> {
     try {
@@ -118,40 +118,37 @@ export const documentApi = {
       });
     }
   },
-  
-  async downloadDocument(documentId: string): Promise<Blob> {
+
+  async generateDocument(data: GenerateDocumentRequest): Promise<DocumentResponse> {
     try {
-      // Get token from cookie using provided cookie management
-      const token = Cookies.get('accessToken');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-  
-      const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/pdf',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include' // Important: include credentials for cookies
-      });
-  
-      if (!response.ok) {
-        // Handle error responses
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to download document');
-      }
-  
-      // Get blob data directly from response
-      return await response.blob();
+      const response = await authApi.authenticatedRequest<DocumentResponse>(
+        `${API_BASE_URL}/api/documents/generate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }
+      );
+      return response;
     } catch (error: any) {
+      if (error.status === 422) {
+        const validationErrors = await error.json?.() || {};
+        throw new DocumentApiError({
+          status: 422,
+          message: validationErrors.detail || 'Invalid document data',
+          code: 'VALIDATION_ERROR',
+          errors: validationErrors
+        });
+      }
       throw new DocumentApiError({
         status: error?.error?.status || 500,
-        message: error.message || 'Failed to download document',
-        code: 'DOWNLOAD_ERROR'
+        message: error.message || 'Failed to generate document',
+        code: 'GENERATE_DOCUMENT_ERROR'
       });
     }
   },
+  
+ 
 
 
   async publishDraft(

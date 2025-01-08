@@ -220,6 +220,56 @@ export function DocumentReviewModal({
     }
   };
 
+  function DocumentGenerationState() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full py-12">
+      {/* Animated SVG or Icon */}
+      <div className="relative mb-8">
+        <div className="absolute inset-0 animate-ping rounded-full bg-primary/10" />
+        <div className="relative rounded-full bg-primary/10 p-8">
+          <FileText className="h-12 w-12 text-primary animate-pulse" />
+        </div>
+      </div>
+
+      {/* Loading Steps */}
+      <div className="space-y-6 w-full max-w-sm">
+        <h3 className="text-center font-medium text-lg mb-6">
+          Generating Your Document
+        </h3>
+
+        <div className="space-y-4">
+          {[
+            { label: "Processing party information", delay: "0s" },
+            { label: "Applying document variables", delay: "1s" },
+            { label: "Formatting content", delay: "2s" },
+            { label: "Generating final document", delay: "3s" }
+          ].map((step, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-3 animate-fadeIn"
+              style={{ animationDelay: step.delay }}
+            >
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="mt-8">
+          <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full w-0 animate-progress" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
   const isDisabled = isGenerating || parentLoading;
 
   return (
@@ -227,136 +277,142 @@ export function DocumentReviewModal({
       <DialogHeader className="p-6 pb-0">
         <DialogTitle className="text-xl flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Document Review
+          {isGenerating ? 'Generating Document' : 'Document Review'}
         </DialogTitle>
       </DialogHeader>
 
-      <div className="flex-1 px-6 py-4 overflow-y-auto" style={{ height: 'calc(90vh - 200px)' }}>
-        {errors.length > 0 && (
-          <div className="mb-6">
-            <Card className="bg-red-50 border-red-200 p-4">
-              <div className="flex items-center gap-2 text-red-600">
-                <AlertCircle className="h-5 w-5" />
-                <h4 className="font-medium">Please fix the following issues:</h4>
-              </div>
-              <ul className="mt-2 space-y-1 text-sm text-red-600 list-disc pl-5">
-                {errors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-        )}
-
-        <section className="space-y-8">
-          <div>
-            <h3 className="text-lg font-medium mb-4">Basic Information</h3>
-            <Card className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Document Type:</span>
-                <Badge variant="secondary" className="text-base">
-                  {documentTypeUtils.toDisplayName(documentType)}
-                </Badge>
-              </div>
-            </Card>
-          </div>
-
-          {hasParties && (
-            <div>
-              <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Parties
-              </h3>
-              <div className="grid gap-4">
-                {documentData.parties.map((party, index) => (
-                  <Card key={party.id || index} className="p-4 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium">
-                          {party.name || `Party ${index + 1}`}
-                        </h4>
-                        {party.email && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                            <Mail className="h-4 w-4" />
-                            {party.email}
-                          </div>
-                        )}
-                      </div>
-                      <Badge variant="outline">
-                        <Building2 className="h-3 w-3 mr-1" />
-                        {party.type}
-                      </Badge>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                        <div className="flex-1 text-sm">
-                          {formatAddress(party.address)}
-                        </div>
-                      </div>
-                      {party.jurisdiction && (
-                        <div className="text-sm pl-6">
-                          <span className="text-muted-foreground">Jurisdiction:</span>{' '}
-                          {party.jurisdiction}
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              Document Details
-            </h3>
-            <Card className="divide-y">
-              {Object.entries(documentData.variables).map(([key, value]) => (
-                <div key={key} className="p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">
-                    {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+      {isGenerating ? (
+        <DocumentGenerationState />
+      ) : (
+        <>
+          <div className="flex-1 px-6 py-4 overflow-y-auto" style={{ height: 'calc(90vh - 200px)' }}>
+            {errors.length > 0 && (
+              <div className="mb-6">
+                <Card className="bg-red-50 border-red-200 p-4">
+                  <div className="flex items-center gap-2 text-red-600">
+                    <AlertCircle className="h-5 w-5" />
+                    <h4 className="font-medium">Please fix the following issues:</h4>
                   </div>
-                  <div className="text-sm">
-                    {formatValue(key, value)}
+                  <ul className="mt-2 space-y-1 text-sm text-red-600 list-disc pl-5">
+                    {errors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </Card>
+              </div>
+            )}
+
+            <section className="space-y-8">
+              <div>
+                <h3 className="text-lg font-medium mb-4">Basic Information</h3>
+                <Card className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Document Type:</span>
+                    <Badge variant="secondary" className="text-base">
+                      {documentTypeUtils.toDisplayName(documentType)}
+                    </Badge>
+                  </div>
+                </Card>
+              </div>
+
+              {hasParties && (
+                <div>
+                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Parties
+                  </h3>
+                  <div className="grid gap-4">
+                    {documentData.parties.map((party, index) => (
+                      <Card key={party.id || index} className="p-4 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium">
+                              {party.name || `Party ${index + 1}`}
+                            </h4>
+                            {party.email && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <Mail className="h-4 w-4" />
+                                {party.email}
+                              </div>
+                            )}
+                          </div>
+                          <Badge variant="outline">
+                            <Building2 className="h-3 w-3 mr-1" />
+                            {party.type}
+                          </Badge>
+                        </div>
+                        
+                        <Separator />
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
+                            <div className="flex-1 text-sm">
+                              {formatAddress(party.address)}
+                            </div>
+                          </div>
+                          {party.jurisdiction && (
+                            <div className="text-sm pl-6">
+                              <span className="text-muted-foreground">Jurisdiction:</span>{' '}
+                              {party.jurisdiction}
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </Card>
-          </div>
-        </section>
-      </div>
-
-      <DialogFooter className="p-6 border-t mt-auto">
-        <div className="flex items-center justify-between w-full gap-4">
-          <span className="text-sm text-muted-foreground">
-            Review your document details before generation
-          </span>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={onClose} disabled={isDisabled}>
-              Back to Edit
-            </Button>
-            <Button 
-              onClick={handleGenerate} 
-              disabled={isDisabled || errors.length > 0}
-              className="min-w-[140px]"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                'Generate Document'
               )}
-            </Button>
+
+              <div>
+                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Document Details
+                </h3>
+                <Card className="divide-y">
+                  {Object.entries(documentData.variables).map(([key, value]) => (
+                    <div key={key} className="p-4">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">
+                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </div>
+                      <div className="text-sm">
+                        {formatValue(key, value)}
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              </div>
+            </section>
           </div>
-        </div>
-      </DialogFooter>
+
+          <DialogFooter className="p-6 border-t mt-auto">
+            <div className="flex items-center justify-between w-full gap-4">
+              <span className="text-sm text-muted-foreground">
+                Review your document details before generation
+              </span>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" onClick={onClose} disabled={isDisabled}>
+                  Back to Edit
+                </Button>
+                <Button 
+                  onClick={handleGenerate} 
+                  disabled={isDisabled || errors.length > 0}
+                  className="min-w-[140px]"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Document'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogFooter>
+        </>
+      )}
     </DialogContent>
   );
 }

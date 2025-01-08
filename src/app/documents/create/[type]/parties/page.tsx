@@ -20,8 +20,12 @@ export default async function PartyInformationPage({ params }: PageProps) {
 
   const initialPartyId = crypto.randomUUID();
 
-  return <PartyInformationClient 
-    documentType={type} 
-    initialPartyId={initialPartyId}
-  />;
+  return (
+    <div className="min-h-screen bg-background">
+      <PartyInformationClient
+        documentType={type}
+        initialPartyId={initialPartyId}
+      />
+    </div>
+  );
 }

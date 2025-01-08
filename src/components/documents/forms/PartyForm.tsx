@@ -125,7 +125,7 @@ export function PartyForm({
   const currentErrors = selectedParty ? validationErrors[selectedParty] || {} : {};
 
   return (
-    <div className="flex gap-6 min-h-[600px] h-[calc(100vh-15rem)]">
+    <div className="flex gap-6 min-h-[600px] h-[calc(100vh-25rem)]">
       {/* Party List */}
       <PartyList
         parties={parties}

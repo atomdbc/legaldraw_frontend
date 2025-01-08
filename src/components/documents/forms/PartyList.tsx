@@ -1,4 +1,5 @@
-// PartyList.tsx
+'use client';
+
 import { memo } from 'react';
 import { Party, PARTY_TYPES } from "@/types/party";
 import { Button } from "@/components/ui/button";
@@ -19,15 +20,15 @@ export const PartyList = memo(function PartyList({
   onAddParty
 }: PartyListProps) {
   return (
-    <div className="w-72 flex flex-col h-full bg-muted/50 p-4 rounded-l-lg"> {/* Added padding and background */}
-      <div className="mb-2">
+    <div className="w-72 flex flex-col h-full bg-muted/50 p-3 rounded-l-lg">
+      <div className="mb-3">
         <h2 className="text-sm font-medium">Parties</h2>
         <p className="text-xs text-muted-foreground">
           Add all parties involved in this agreement
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="space-y-1">
           {parties.map((party) => {
             const PartyIcon = PARTY_TYPES.find(t => t.id === party.type)?.icon || Building2;
@@ -38,14 +39,14 @@ export const PartyList = memo(function PartyList({
                 key={party.id}
                 onClick={() => onSelectParty(party.id)}
                 className={cn(
-                  "w-full flex items-center gap-2 p-2 text-left rounded-lg transition-all duration-200",
+                  "w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md transition-all duration-200",
                   selectedParty === party.id
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-muted"
                 )}
               >
                 <div className={cn(
-                  "rounded-lg p-1",
+                  "rounded-md p-1",
                   selectedParty === party.id
                     ? "bg-primary-foreground/10"
                     : "bg-muted"
@@ -54,7 +55,7 @@ export const PartyList = memo(function PartyList({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="flex-1 truncate text-sm font-medium">
+                    <span className="flex-1 truncate text-sm">
                       {party.name || 'Unnamed Party'}
                     </span>
                     {isComplete && (
@@ -73,8 +74,9 @@ export const PartyList = memo(function PartyList({
 
       <Button
         onClick={onAddParty}
-        className="mt-4 w-full"
+        className="mt-2"
         variant="outline"
+        size="sm"
       >
         <Plus className="mr-2 h-4 w-4" />
         Add Party

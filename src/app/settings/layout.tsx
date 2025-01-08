@@ -1,8 +1,6 @@
-// src/app/(settings)/layout.tsx
+import DashboardShell from "@/components/dashboard/DashboardShell";
 
-import DashboardShell from '@/components/dashboard/DashboardShell';
-
-export default function DashboardLayout({
+export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;

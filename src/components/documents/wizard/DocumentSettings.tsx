@@ -220,7 +220,7 @@ export function DocumentSettings({
 
           <Separator className="my-4" />
 
-          <div className="space-y-4">
+          {/* <div className="space-y-4">
             <div className="space-y-2">
               <Label>Primary Color</Label>
               <ColorPicker 
@@ -240,7 +240,7 @@ export function DocumentSettings({
                 }
               />
             </div>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>

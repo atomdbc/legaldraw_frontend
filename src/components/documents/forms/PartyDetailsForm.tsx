@@ -69,7 +69,7 @@ export function PartyDetailsForm({
 
         <div className="grid gap-6">
           {/* Party Type */}
-          <div className="grid gap-2">
+          <div className="grid gap-4">
             <Label className="flex items-center gap-2">
               Party Type
               {errors.type && (
