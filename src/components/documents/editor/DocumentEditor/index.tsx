@@ -128,7 +128,7 @@ export default function DocumentEditor({
             <Button
               size="default"
               className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm backdrop-blur-sm"
-              onClick={() => window.location.href = '/settings/billing'}
+              onClick={() => window.location.href = '/settings'}
             >
               Upgrade Now
             </Button>

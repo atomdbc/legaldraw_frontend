@@ -15,7 +15,7 @@ import type {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export class DocumentApiError extends Error {
-  constructor(public error: { status: number; message: string; code?: string }) {
+  constructor(public error: { status: number; message: string; code?: string; detail?: any }) {
     super(error.message);
     this.name = 'DocumentApiError';
     console.log('DocumentApiError Details:', {
@@ -50,29 +50,38 @@ export const documentApi = {
   },
 
   async downloadDocument(documentId: string): Promise<Blob> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/pdf',
-        'Authorization': `Bearer ${Cookies.get('accessToken')}`
-      },
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to download document');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+          'Authorization': `Bearer ${Cookies.get('accessToken')}`
+        },
+        credentials: 'include'
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new DocumentApiError({
+          status: response.status,
+          message: errorData.message || 'Failed to download document',
+          code: 'DOWNLOAD_ERROR',
+          detail: errorData // Include the full error response
+        });
+      }
+  
+      return await response.blob();
+    } catch (error: any) {
+      if (error instanceof DocumentApiError) {
+        throw error;
+      }
+      throw new DocumentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to download document',
+        code: 'DOWNLOAD_ERROR'
+      });
     }
-
-    return await response.blob();
-  } catch (error: any) {
-    throw new DocumentApiError({
-      status: error?.error?.status || 500,
-      message: error.message || 'Failed to download document',
-      code: 'DOWNLOAD_ERROR'
-    });
-  }
-},
+  },
 
   async getDocument(documentId: string): Promise<DocumentContentResponse> {
     try {

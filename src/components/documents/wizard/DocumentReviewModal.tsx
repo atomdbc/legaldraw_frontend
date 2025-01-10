@@ -127,13 +127,14 @@ export function DocumentReviewModal({
 
   const getDocumentType = (type: string): string => {
     // Map frontend types to backend enum values exactly
-    const typeMap = {
+    const typeMap: Record<string, string> = {
       'nda': 'NDA',
       'service': 'SERVICE', // Matching backend enum exactly
       'employment': 'EMPLOYMENT',
       'software': 'SOFTWARE_LICENSE'
     };
-    return typeMap[type.toLowerCase()] || type.toUpperCase();
+    const lowercaseType = type.toLowerCase();
+    return lowercaseType in typeMap ? typeMap[lowercaseType] : type.toUpperCase();
   };
   
   const handleGenerate = async () => {
@@ -297,7 +298,7 @@ export function DocumentReviewModal({
               <Button
                 size="lg"
                 className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm backdrop-blur-sm"
-                onClick={() => window.location.href = '/settings/billing'}
+                onClick={() => window.location.href = '/settings'}
               >
                 Upgrade Now
               </Button>

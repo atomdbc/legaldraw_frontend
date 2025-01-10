@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { use } from 'react';
 import { useDocument } from '@/hooks/useDocument';
 import type { DocumentContentResponse } from '@/types/document';
-import { FileText, ArrowLeft, Download } from 'lucide-react';
+import { FileText, ArrowLeft, Download, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -36,23 +36,39 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     getDocumentContent, 
     isLoading,
     downloadDocument, // Add the download hook
-    isDownloading // Add downloading state
+    isDownloading ,
+    clearDownloadError
   } = useDocument();
   const [document, setDocument] = useState<DocumentContentResponse | null>(null);
   const [content, setContent] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
   const [error, setError] = useState<DocumentApiError | null>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [downloadError, setDownloadError] = useState<{
+    reason: string;
+    message: string;
+  } | null>(null);
 
   const handleDownload = useCallback(async () => {
     if (!documentId) return;
     
     try {
-      await downloadDocument(documentId);
-    } catch (error) {
-      console.error('Error downloading document:', error);
+        // We'll pass a flag to indicate we don't want toast errors
+        await downloadDocument(documentId, { suppressToast: true });
+    } catch (error: any) {
+        // No need to log error to console to keep things clean
+        const errorResponse = error?.response?.data || error?.error?.detail || error;
+        
+        // Only set the banner error
+        if (errorResponse) {
+            setDownloadError({
+                reason: errorResponse.reason || 'No active plan',
+                message: errorResponse.message || 'Unable to download document. Please check your plan limits.'
+            });
+        }
     }
-  }, [documentId, downloadDocument]);
+ }, [documentId, downloadDocument]);
+  
 
   const handleSave = async (newContent: string) => {
     setContent(newContent);
@@ -131,7 +147,45 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     </Button>
         </div>
       </header>
-
+      {downloadError && (
+  <div className="fixed inset-x-0 top-16 z-50">
+    <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200">
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-medium text-red-600">
+                Subscription Required
+              </h3>
+              <p className="text-sm text-gray-600">
+                {downloadError.message}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => window.location.href = '/settings'}
+            >
+              Upgrade Plan
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDownloadError(null)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       <div className="flex-1 overflow-hidden">
         <Card className="h-full w-full rounded-none border-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">

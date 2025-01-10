@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { documentApi } from '@/lib/api/document';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { AlertCircle, Download } from 'lucide-react';
 
 interface PreviewClientProps {
   documentType: string;
@@ -27,7 +27,7 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [documentContent, setDocumentContent] = useState<any>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
-  const { downloadDocument, isDownloading } = useDocument();
+  const { downloadDocument, isDownloading, downloadError, clearDownloadError } = useDocument();
 
   useEffect(() => {
     const loadDocument = async () => {
@@ -94,11 +94,18 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
     }
   };
 
-  const handleDownload = () => {
-    if (documentId) {
-      downloadDocument(documentId);
+  const handleDownload = async () => {
+    if (!documentId) return;
+    
+    try {
+        // Pass suppressToast to prevent toast error
+        await downloadDocument(documentId, { suppressToast: true });
+    } catch (error: any) {
+        // The hook will handle setting the download error state
+        // No need for additional error handling here since we're using the hook's state
+        return;
     }
-  };
+};
 
   return (
     <DocumentWizard
@@ -107,6 +114,43 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
       allowNext={false}
       documentType={documentType}
     >
+      {downloadError && (
+      <div className="border-b bg-white/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-black/5 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-gray-900" />
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">
+                  Subscription Required
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {downloadError.message}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-gray-800 text-white"
+                onClick={() => window.location.href = '/settings'}
+              >
+                Upgrade Plan
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => clearDownloadError?.()}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
       <div className="h-full grid grid-cols-[160px_1fr] gap-2">
         <DocumentPreviewPanel
           content={documentContent?.content || progressData?.data?.content || ''}

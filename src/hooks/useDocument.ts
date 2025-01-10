@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { documentApi } from '@/lib/api/document';
+import { documentApi, DocumentApiError } from '@/lib/api/document';
 import { useToast } from '@/hooks/use-toast';
 import type {
   DocumentResponse,
@@ -11,7 +11,9 @@ import type {
   DocumentStats,
 } from '@/types/document';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
+interface DownloadOptions {
+  suppressToast?: boolean;
+}
 
 export function useDocument() {
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
@@ -26,7 +28,10 @@ export function useDocument() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success' | 'error'>('idle');
   const [isDownloading, setIsDownloading] = useState(false);
-
+  const [downloadError, setDownloadError] = useState<{
+    reason: string;
+    message: string;
+} | null>(null);
   // Simple rate limiting
   const lastFetchTime = useRef<number>(0);
   const MIN_FETCH_INTERVAL = 60000; // 1 minute
@@ -75,44 +80,44 @@ export function useDocument() {
     }
   }, [isLoading, documents.length, toast]);
 
-  const downloadDocument = useCallback(async (documentId: string) => {
+  const downloadDocument = useCallback(async (documentId: string, options: DownloadOptions = {}) => {
     if (isDownloading || !documentId) return;
     
     setIsDownloading(true);
     try {
-      const pdfBlob = await documentApi.downloadDocument(documentId);
-      
-      // Create URL from blob
-      const url = window.URL.createObjectURL(pdfBlob);
-      
-      // Create link and trigger download
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `document-${documentId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      document.body.removeChild(link);
-      setTimeout(() => {
+        const response = await documentApi.downloadDocument(documentId);
+        const url = window.URL.createObjectURL(response);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `document-${documentId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
-      }, 100);
-  
-      toast({
-        title: "Success",
-        description: "Document download started"
-      });
+
     } catch (error: any) {
-      console.error('Download error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to download document"
-      });
+        // Set download error from the API response
+        if (error instanceof DocumentApiError) {
+            setDownloadError({
+                reason: error.detail?.reason || 'No active plan',
+                message: error.detail?.message || 'Unable to download document. Please check your plan limits.'
+            });
+        }
+
+        if (!options.suppressToast) {
+            toast({
+                variant: "destructive",
+                title: "Download Failed",
+                description: error.message
+            });
+        }
+        throw error;
     } finally {
-      setIsDownloading(false);
+        setIsDownloading(false);
     }
-  }, [isDownloading, toast]);
+}, [isDownloading, toast]);
+
+
 
   // In useDocument hook
 const publishDraft = useCallback(async (documentId: string, content: string, version: string) => {
@@ -257,7 +262,8 @@ const publishDraft = useCallback(async (documentId: string, content: string, ver
     isLoading,
     error,
     isDownloading,
-    
+    downloadError,
+    clearDownloadError: () => setDownloadError(null),
     // Actions
     fetchDocuments,
     generateDocument,
@@ -270,6 +276,8 @@ const publishDraft = useCallback(async (documentId: string, content: string, ver
     publishStatus,
   publishDraft,
   downloadDocument,
+  
+  
 
   };
 }
