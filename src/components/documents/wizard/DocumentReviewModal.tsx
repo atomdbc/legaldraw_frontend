@@ -82,6 +82,7 @@ export function DocumentReviewModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const { toast } = useToast();
+  const [showSubscriptionError, setShowSubscriptionError] = useState(false);
   const hasParties = documentData.parties && documentData.parties.length > 0;
 
   const validateParties = (parties: Party[]): string[] => {
@@ -149,6 +150,7 @@ export function DocumentReviewModal({
       }
   
       setIsGenerating(true);
+      setShowSubscriptionError(false);
   
       const formattedParties = documentData.parties.map(party => ({
         name: party.name,
@@ -196,29 +198,33 @@ export function DocumentReviewModal({
 
     const response = await documentApi.generateDocument(payload);
       
-      if (response?.document_id) {
-        toast({
-          title: "Success",
-          description: "Document generated successfully"
-        });
-        router.push(`/documents/create/${documentType.toLowerCase()}/preview?documentId=${response.document_id}`);
-      }
-    } catch (error: any) {
-      console.error('Document generation failed:', error);
-      
-      const errorMessage = error?.error?.message 
-        || error?.message 
-        || "Failed to generate document";
-  
+    if (response?.document_id) {
       toast({
-        variant: "destructive",
-        title: "Generation Failed",
-        description: errorMessage
+        title: "Success",
+        description: "Document generated successfully"
       });
-    } finally {
-      setIsGenerating(false);
+      router.push(`/documents/create/${documentType.toLowerCase()}/preview?documentId=${response.document_id}`);
     }
-  };
+  } catch (error: any) {
+    console.error('Document generation failed:', error);
+    
+    const errorMessage = error?.error?.message || error?.message || "Failed to generate document";
+    
+    // Check if it's a subscription error
+    if (errorMessage.includes('No active plan')) {
+      setShowSubscriptionError(true);
+      return;
+    }
+
+    toast({
+      variant: "destructive",
+      title: "Generation Failed",
+      description: errorMessage
+    });
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   function DocumentGenerationState() {
   return (
@@ -273,13 +279,49 @@ export function DocumentReviewModal({
   const isDisabled = isGenerating || parentLoading;
 
   return (
-    <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+     <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+    {showSubscriptionError ? (
+      <div className="h-full flex items-center justify-center p-8 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm">
+        <div className="max-w-md w-full">
+          <div className="bg-white/70 backdrop-blur-md rounded-lg shadow-lg border border-gray-200/60 p-8 text-center">
+            <div className="h-12 w-12 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center mb-4 mx-auto">
+              <AlertCircle className="h-6 w-6 text-gray-900" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              Subscription Required
+            </h3>
+            <p className="text-gray-600 mb-6">
+              You need an active subscription to generate documents. Upgrade your plan to continue.
+            </p>
+            <div className="flex gap-3 items-center justify-center">
+              <Button
+                size="lg"
+                className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm backdrop-blur-sm"
+                onClick={() => window.location.href = '/settings/billing'}
+              >
+                Upgrade Now
+              </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100/50"
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : (
       <DialogHeader className="p-6 pb-0">
         <DialogTitle className="text-xl flex items-center gap-2">
           <FileText className="h-5 w-5" />
           {isGenerating ? 'Generating Document' : 'Document Review'}
         </DialogTitle>
       </DialogHeader>
+    )}
+
 
       {isGenerating ? (
         <DocumentGenerationState />

@@ -63,6 +63,7 @@
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   └── settings
+│   │       ├── SettingsClient.tsx
 │   │       ├── layout.tsx
 │   │       └── page.tsx
 │   ├── components
@@ -103,8 +104,7 @@
 │   │   │       ├── DocumentSettings.tsx
 │   │   │       ├── DocumentTypeSelector.tsx
 │   │   │       ├── DocumentVariables.tsx
-│   │   │       ├── DocumentWizard.tsx
-│   │   │       └── PartyInformation.tsx
+│   │   │       └── DocumentWizard.tsx
 │   │   ├── landing
 │   │   │   ├── CTA.tsx
 │   │   │   ├── FeatureShowcase.tsx
