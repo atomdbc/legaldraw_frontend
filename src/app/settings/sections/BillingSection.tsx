@@ -125,5 +125,6 @@ function BillingSectionLoading() {
         </div>
       </CardContent>
     </Card>
-  );
+ 
+);
 }
