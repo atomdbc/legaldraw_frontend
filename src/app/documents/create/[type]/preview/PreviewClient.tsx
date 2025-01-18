@@ -13,6 +13,10 @@ import { documentApi } from '@/lib/api/document';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Download } from 'lucide-react';
+import { usePayment } from '@/hooks/usePayment';
+import { PlanType, Currency, BillingCycle } from '@/types/enums';
+import type { PaymentCreateRequest } from '@/types/payment';
+
 
 interface PreviewClientProps {
   documentType: string;
@@ -28,7 +32,94 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
   const [documentContent, setDocumentContent] = useState<any>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const { downloadDocument, isDownloading, downloadError, clearDownloadError } = useDocument();
+  const { createPayment, getPlans } = usePayment();
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  const handlePerDocumentPayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const plans = await getPlans();
+      const perDocumentPlan = plans.find(p => p.name === PlanType.PER_DOCUMENT);
+      
+      if (!perDocumentPlan) throw new Error('Per-document plan not found');
+  
+      const paymentData: PaymentCreateRequest = {
+        amount: 2,
+        currency: Currency.USD,
+        plan_id: perDocumentPlan.id,
+        payment_type: 'one_time',
+        payment_metadata: {
+          document_id: documentId,
+          plan_name: PlanType.PER_DOCUMENT,
+          billing_cycle: BillingCycle.PER_DOCUMENT,
+          currency_code: Currency.USD,
+          original_amount: 2
+        }
+      };
+  
+      const response = await createPayment(paymentData);
+      if (response?.payment_metadata?.payment_link) {
+        toast({
+          title: "Payment Initiated",
+          description: "Redirecting to payment gateway..."
+        });
+        window.location.href = response.payment_metadata.payment_link;
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast({
+        variant: "destructive",
+        title: "Payment Error",
+        description: error.message || "Failed to process payment"
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+  
+  const handleUsagePayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const plans = await getPlans();
+      const usagePlan = plans.find(p => p.name === PlanType.USAGE_BASED);
+      
+      if (!usagePlan) throw new Error('Usage plan not found');
+  
+      const paymentData: PaymentCreateRequest = {
+        amount: 2,
+        currency: Currency.USD,
+        plan_id: usagePlan.id,
+        payment_type: 'one_time',
+        payment_metadata: {
+          document_id: documentId,
+          plan_name: PlanType.USAGE_BASED,
+          billing_cycle: BillingCycle.USAGE_BASED,
+          currency_code: Currency.USD,
+          original_amount: 2
+        }
+      };
+  
+      const response = await createPayment(paymentData);
+      if (response?.payment_metadata?.payment_link) {
+        toast({
+          title: "Payment Initiated",
+          description: "Redirecting to payment gateway..."
+        });
+        window.location.href = response.payment_metadata.payment_link;
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast({
+        variant: "destructive",
+        title: "Payment Error",
+        description: error.message || "Failed to process payment"
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
+  
   useEffect(() => {
     const loadDocument = async () => {
       if (!documentId) {
@@ -115,42 +206,44 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
       documentType={documentType}
     >
       {downloadError && (
-      <div className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-black/5 flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-gray-900" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">
-                  Subscription Required
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {downloadError.message}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                className="bg-red-600 hover:bg-gray-800 text-white"
-                onClick={() => window.location.href = '/settings'}
-              >
-                Upgrade Plan
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => clearDownloadError?.()}
-              >
-                Dismiss
-              </Button>
-            </div>
+  <div className="border-b bg-white/80 backdrop-blur-sm">
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-black/5 flex items-center justify-center">
+            <AlertCircle className="h-5 w-5 text-gray-900" />
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900">Access Required</h3>
+            <p className="text-sm text-gray-600">{downloadError.message}</p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePerDocumentPayment}
+            disabled={isProcessingPayment}
+            className="min-w-[160px]"
+          >
+            {isProcessingPayment ? 'Processing...' : 'Pay $2 for this document'}
+          </Button>
+  
+          <Button
+            size="sm"
+            className="bg-black hover:bg-black/90 text-white"
+            onClick={() => window.location.href = '/settings'}
+          >
+            Upgrade Plan
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => clearDownloadError?.()}>
+            Dismiss
+          </Button>
+        </div>
       </div>
-    )}
+    </div>
+  </div>
+)}
       <div className="h-full grid grid-cols-[160px_1fr] gap-2">
         <DocumentPreviewPanel
           content={documentContent?.content || progressData?.data?.content || ''}

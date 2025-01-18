@@ -10,10 +10,19 @@ import type {
   DocumentContentResponse,
   DocumentStats,
 } from '@/types/document';
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 interface DownloadOptions {
   suppressToast?: boolean;
 }
+interface DownloadError {
+  reason: string;
+  message: string;
+  paymentOptions?: Array<{
+    type: string;
+    amount: number;
+    label: string;
+  }>;
+}
+
 
 export function useDocument() {
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
@@ -28,10 +37,7 @@ export function useDocument() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success' | 'error'>('idle');
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState<{
-    reason: string;
-    message: string;
-} | null>(null);
+  const [downloadError, setDownloadError] = useState<DownloadError | null>(null);
   // Simple rate limiting
   const lastFetchTime = useRef<number>(0);
   const MIN_FETCH_INTERVAL = 60000; // 1 minute
@@ -96,11 +102,14 @@ export function useDocument() {
         window.URL.revokeObjectURL(url);
 
     } catch (error: any) {
-        // Set download error from the API response
         if (error instanceof DocumentApiError) {
             setDownloadError({
                 reason: error.detail?.reason || 'No active plan',
-                message: error.detail?.message || 'Unable to download document. Please check your plan limits.'
+                message: error.detail?.message || 'Unable to download document. Choose an option:',
+                paymentOptions: [
+                    { type: 'per_document', amount: 2, label: 'Pay $2 for this document' },
+                    { type: 'usage', amount: 2, label: 'Pay $2 for usage' }
+                ]
             });
         }
 

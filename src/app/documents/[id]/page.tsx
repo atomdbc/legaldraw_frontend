@@ -3,19 +3,30 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { use } from 'react';
 import { useDocument } from '@/hooks/useDocument';
-import type { DocumentContentResponse } from '@/types/document';
-import { FileText, ArrowLeft, Download, AlertCircle } from 'lucide-react';
+import { usePayment } from '@/hooks/usePayment';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+
+// Components
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DocumentApiError } from '@/lib/api/document';
-import { cn } from '@/lib/utils';
 import DocumentEditor from '@/components/documents/editor/DocumentEditor';
+import { UpgradePlanModal } from '@/app/settings/modals/UpgradePlanModal';
 
+// Icons
+import { FileText, ArrowLeft, Download, AlertCircle } from 'lucide-react';
 
+// Types
+import type { DocumentContentResponse } from '@/types/document';
+import { DocumentApiError } from '@/lib/api/document';
+import { PlanType, Currency, BillingCycle } from '@/types/enums';
+import type { PaymentCreateRequest } from '@/types/payment';
+
+// Utils
+import { cn } from '@/lib/utils';
 
 interface DocumentPageProps {
   params: Promise<{ id: string }>;
@@ -30,49 +41,140 @@ const LoadingSkeleton = () => (
 export default function DocumentPage({ params }: DocumentPageProps) {
   const resolvedParams = use(params);
   const documentId = resolvedParams.id;
+  const { toast } = useToast();
   
+  // Hooks
+  const { createPayment, getPlans } = usePayment();
   const { 
     getDocument, 
     getDocumentContent, 
     isLoading,
-    downloadDocument, // Add the download hook
-    isDownloading ,
-    clearDownloadError
+    downloadDocument,
+    isDownloading
   } = useDocument();
+
+  // State
   const [document, setDocument] = useState<DocumentContentResponse | null>(null);
   const [content, setContent] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
   const [error, setError] = useState<DocumentApiError | null>(null);
-  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [downloadError, setDownloadError] = useState<{
     reason: string;
     message: string;
   } | null>(null);
 
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handlePerDocumentPayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const plans = await getPlans();
+      const perDocumentPlan = plans.find(p => p.name === PlanType.PER_DOCUMENT);
+      
+      if (!perDocumentPlan) {
+        throw new Error('Per-document plan not found');
+      }
+
+      const paymentData: PaymentCreateRequest = {
+        amount: 2,
+        currency: Currency.USD,
+        plan_id: perDocumentPlan.id,
+        payment_type: 'one_time',
+        payment_metadata: {
+          document_id: documentId,
+          plan_name: PlanType.PER_DOCUMENT,
+          billing_cycle: BillingCycle.PER_DOCUMENT,
+          currency_code: Currency.USD,
+          original_amount: 2
+        }
+      };
+
+      const response = await createPayment(paymentData);
+      
+      if (response?.payment_metadata?.payment_link) {
+        toast({
+          title: "Payment Initiated",
+          description: "Redirecting to payment gateway..."
+        });
+        window.location.href = response.payment_metadata.payment_link;
+      } else {
+        throw new Error('No payment link received');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast({
+        variant: "destructive",
+        title: "Payment Error",
+        description: error.response?.data?.message || error.message || "Failed to process payment"
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const handleDownload = useCallback(async () => {
     if (!documentId) return;
     
     try {
-        // We'll pass a flag to indicate we don't want toast errors
-        await downloadDocument(documentId, { suppressToast: true });
+      await downloadDocument(documentId, { suppressToast: true });
     } catch (error: any) {
-        // No need to log error to console to keep things clean
-        const errorResponse = error?.response?.data || error?.error?.detail || error;
-        
-        // Only set the banner error
-        if (errorResponse) {
-            setDownloadError({
-                reason: errorResponse.reason || 'No active plan',
-                message: errorResponse.message || 'Unable to download document. Please check your plan limits.'
-            });
-        }
+      const errorResponse = error?.response?.data || error?.error?.detail || error;
+      
+      if (errorResponse) {
+        setDownloadError({
+          reason: errorResponse.reason || 'No active plan',
+          message: 'Choose an option to access this document:'
+        });
+      }
     }
- }, [documentId, downloadDocument]);
-  
+  }, [documentId, downloadDocument]);
 
   const handleSave = async (newContent: string) => {
     setContent(newContent);
-    // Add your save logic here
+  };
+
+  const handleUsagePayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const plans = await getPlans();
+      const usagePlan = plans.find(p => p.name === PlanType.USAGE_BASED);
+      
+      if (!usagePlan) throw new Error('Usage plan not found');
+  
+      const paymentData: PaymentCreateRequest = {
+        amount: 2,
+        currency: Currency.USD,
+        plan_id: usagePlan.id,
+        payment_type: 'one_time',
+        payment_metadata: {
+          document_id: documentId,
+          plan_name: PlanType.USAGE_BASED,
+          billing_cycle: BillingCycle.USAGE_BASED,
+          currency_code: Currency.USD,
+          original_amount: 2
+        }
+      };
+  
+      const response = await createPayment(paymentData);
+      if (response?.payment_metadata?.payment_link) {
+        toast({
+          title: "Payment Initiated",
+          description: "Redirecting to payment gateway..."
+        });
+        window.location.href = response.payment_metadata.payment_link;
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast({
+        variant: "destructive",
+        title: "Payment Error",
+        description: error.message || "Failed to process payment"
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const fetchDocument = async () => {
@@ -137,55 +239,57 @@ export default function DocumentPage({ params }: DocumentPageProps) {
             </div>
           </div>
           <Button 
-      variant="outline" 
-      size="sm" 
-      onClick={handleDownload}
-      disabled={isDownloading}
-    >
-      <Download className="h-4 w-4 mr-2" />
-      {isDownloading ? 'Downloading...' : 'Download'}
-    </Button>
+            variant="outline" 
+            size="sm" 
+            onClick={handleDownload}
+            disabled={isDownloading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isDownloading ? 'Downloading...' : 'Download'}
+          </Button>
         </div>
       </header>
+
       {downloadError && (
-  <div className="fixed inset-x-0 top-16 z-50">
-    <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-            </div>
-            <div>
-              <h3 className="font-medium text-red-600">
-                Subscription Required
-              </h3>
-              <p className="text-sm text-gray-600">
-                {downloadError.message}
-              </p>
-            </div>
+  <div className="border-b bg-white/80 backdrop-blur-sm">
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-black/5 flex items-center justify-center">
+            <AlertCircle className="h-5 w-5 text-gray-900" />
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => window.location.href = '/settings'}
-            >
-              Upgrade Plan
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDownloadError(null)}
-            >
-              Dismiss
-            </Button>
+          <div>
+            <h3 className="font-medium text-gray-900">Payment Required</h3>
+            <p className="text-sm text-gray-600">{downloadError.message}</p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePerDocumentPayment}
+            disabled={isProcessingPayment}
+            className="min-w-[160px]"
+          >
+            {isProcessingPayment ? 'Processing...' : 'Pay $2 for this document'}
+          </Button>
+          <Button
+            size="sm"
+            className="bg-black hover:bg-black/90 text-white"
+            onClick={() => window.location.href = '/settings'}
+          >
+            Upgrade Plan
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => clearDownloadError?.()}>
+            Dismiss
+          </Button>
         </div>
       </div>
     </div>
   </div>
 )}
+
+
       <div className="flex-1 overflow-hidden">
         <Card className="h-full w-full rounded-none border-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
@@ -226,6 +330,13 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           </Tabs>
         </Card>
       </div>
+
+      <UpgradePlanModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        currentPlan={null}
+        onSuccess={() => window.location.reload()}
+      />
     </div>
   );
 }

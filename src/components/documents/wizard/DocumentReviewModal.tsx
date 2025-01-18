@@ -27,6 +27,7 @@ import {
   Loader2,
   AlertCircle 
 } from "lucide-react";
+import { UpgradePlanModal } from "@/app/settings/modals/UpgradePlanModal";
 
 interface DocumentReviewModalProps {
   isOpen: boolean;
@@ -84,7 +85,8 @@ export function DocumentReviewModal({
   const { toast } = useToast();
   const [showSubscriptionError, setShowSubscriptionError] = useState(false);
   const hasParties = documentData.parties && documentData.parties.length > 0;
-
+  const [error, setError] = useState<any>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const validateParties = (parties: Party[]): string[] => {
     const validationErrors: string[] = [];
     
@@ -207,16 +209,14 @@ export function DocumentReviewModal({
       router.push(`/documents/create/${documentType.toLowerCase()}/preview?documentId=${response.document_id}`);
     }
   } catch (error: any) {
-    console.error('Document generation failed:', error);
-    
+    setError(error);
     const errorMessage = error?.error?.message || error?.message || "Failed to generate document";
     
-    // Check if it's a subscription error
-    if (errorMessage.includes('No active plan')) {
+    if (errorMessage.includes('No active plan') || errorMessage.includes('Monthly generation limit reached')) {
       setShowSubscriptionError(true);
       return;
     }
-
+  
     toast({
       variant: "destructive",
       title: "Generation Failed",
@@ -280,182 +280,198 @@ export function DocumentReviewModal({
   const isDisabled = isGenerating || parentLoading;
 
   return (
-     <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-    {showSubscriptionError ? (
-      <div className="h-full flex items-center justify-center p-8 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm">
-        <div className="max-w-md w-full">
-          <div className="bg-white/70 backdrop-blur-md rounded-lg shadow-lg border border-gray-200/60 p-8 text-center">
-            <div className="h-12 w-12 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center mb-4 mx-auto">
-              <AlertCircle className="h-6 w-6 text-gray-900" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Subscription Required
-            </h3>
-            <p className="text-gray-600 mb-6">
-              You need an active subscription to generate documents. Upgrade your plan to continue.
-            </p>
-            <div className="flex gap-3 items-center justify-center">
-              <Button
-                size="lg"
-                className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm backdrop-blur-sm"
-                onClick={() => window.location.href = '/settings'}
-              >
-                Upgrade Now
-              </Button>
-              <Button
-                variant="ghost"
-                size="lg"
-                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100/50"
-                onClick={onClose}
-              >
-                Cancel
-              </Button>
+    <>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+  <DialogTitle className="sr-only">
+    {isGenerating ? 'Document Generation' : 'Document Review'}
+  </DialogTitle>
+        {showSubscriptionError ? (
+          <div className="h-full flex items-center justify-center p-8 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm">
+            <div className="max-w-md w-full">
+              <div className="bg-white/70 backdrop-blur-md rounded-lg shadow-lg border border-gray-200/60 p-8 text-center">
+                <div className="h-12 w-12 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center mb-4 mx-auto">
+                  <AlertCircle className="h-6 w-6 text-gray-900" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  {error?.error?.message?.includes('Monthly generation limit reached') 
+                    ? 'Monthly Limit Reached'
+                    : 'Subscription Required'}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {error?.error?.message?.includes('Monthly generation limit reached')
+                    ? 'You have reached your monthly document generation limit. Upgrade your plan to generate more documents.'
+                    : 'You need an active subscription to generate documents. Upgrade your plan to continue.'}
+                </p>
+                <div className="flex gap-3 items-center justify-center">
+                  <Button
+                    size="lg"
+                    className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm backdrop-blur-sm"
+                    onClick={() => setShowUpgradeModal(true)}
+                  >
+                    Upgrade Now
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="text-gray-600 hover:text-gray-800 hover:bg-gray-100/50"
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    ) : (
-      <DialogHeader className="p-6 pb-0">
-        <DialogTitle className="text-xl flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          {isGenerating ? 'Generating Document' : 'Document Review'}
-        </DialogTitle>
-      </DialogHeader>
-    )}
-
-
-      {isGenerating ? (
-        <DocumentGenerationState />
-      ) : (
-        <>
-          <div className="flex-1 px-6 py-4 overflow-y-auto" style={{ height: 'calc(90vh - 200px)' }}>
-            {errors.length > 0 && (
-              <div className="mb-6">
-                <Card className="bg-red-50 border-red-200 p-4">
-                  <div className="flex items-center gap-2 text-red-600">
-                    <AlertCircle className="h-5 w-5" />
-                    <h4 className="font-medium">Please fix the following issues:</h4>
-                  </div>
-                  <ul className="mt-2 space-y-1 text-sm text-red-600 list-disc pl-5">
-                    {errors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                </Card>
-              </div>
-            )}
-
-            <section className="space-y-8">
-              <div>
-                <h3 className="text-lg font-medium mb-4">Basic Information</h3>
-                <Card className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Document Type:</span>
-                    <Badge variant="secondary" className="text-base">
-                      {documentTypeUtils.toDisplayName(documentType)}
-                    </Badge>
-                  </div>
-                </Card>
-              </div>
-
-              {hasParties && (
-                <div>
-                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Parties
-                  </h3>
-                  <div className="grid gap-4">
-                    {documentData.parties.map((party, index) => (
-                      <Card key={party.id || index} className="p-4 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-medium">
-                              {party.name || `Party ${index + 1}`}
-                            </h4>
-                            {party.email && (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                <Mail className="h-4 w-4" />
-                                {party.email}
-                              </div>
-                            )}
-                          </div>
-                          <Badge variant="outline">
-                            <Building2 className="h-3 w-3 mr-1" />
-                            {party.type}
+        ) : (
+          <>
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                {isGenerating ? 'Generating Document' : 'Document Review'}
+              </DialogTitle>
+            </DialogHeader>
+  
+            {isGenerating ? (
+              <DocumentGenerationState />
+            ) : (
+              <>
+                <div className="flex-1 px-6 py-4 overflow-y-auto" style={{ height: 'calc(90vh - 200px)' }}>
+                  {errors.length > 0 && (
+                    <div className="mb-6">
+                      <Card className="bg-red-50 border-red-200 p-4">
+                        <div className="flex items-center gap-2 text-red-600">
+                          <AlertCircle className="h-5 w-5" />
+                          <h4 className="font-medium">Please fix the following issues:</h4>
+                        </div>
+                        <ul className="mt-2 space-y-1 text-sm text-red-600 list-disc pl-5">
+                          {errors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                        </ul>
+                      </Card>
+                    </div>
+                  )}
+  
+                  <section className="space-y-8">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Basic Information</h3>
+                      <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Document Type:</span>
+                          <Badge variant="secondary" className="text-base">
+                            {documentTypeUtils.toDisplayName(documentType)}
                           </Badge>
                         </div>
-                        
-                        <Separator />
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-start gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div className="flex-1 text-sm">
-                              {formatAddress(party.address)}
-                            </div>
-                          </div>
-                          {party.jurisdiction && (
-                            <div className="text-sm pl-6">
-                              <span className="text-muted-foreground">Jurisdiction:</span>{' '}
-                              {party.jurisdiction}
-                            </div>
-                          )}
-                        </div>
                       </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  Document Details
-                </h3>
-                <Card className="divide-y">
-                  {Object.entries(documentData.variables).map(([key, value]) => (
-                    <div key={key} className="p-4">
-                      <div className="text-sm font-medium text-muted-foreground mb-1">
-                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </div>
-                      <div className="text-sm">
-                        {formatValue(key, value)}
-                      </div>
                     </div>
-                  ))}
-                </Card>
-              </div>
-            </section>
-          </div>
-
-          <DialogFooter className="p-6 border-t mt-auto">
-            <div className="flex items-center justify-between w-full gap-4">
-              <span className="text-sm text-muted-foreground">
-                Review your document details before generation
-              </span>
-              <div className="flex items-center gap-3">
-                <Button variant="outline" onClick={onClose} disabled={isDisabled}>
-                  Back to Edit
-                </Button>
-                <Button 
-                  onClick={handleGenerate} 
-                  disabled={isDisabled || errors.length > 0}
-                  className="min-w-[140px]"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Document'
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
-        </>
-      )}
-    </DialogContent>
+  
+                    {hasParties && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Parties
+                        </h3>
+                        <div className="grid gap-4">
+                          {documentData.parties.map((party, index) => (
+                            <Card key={party.id || index} className="p-4 space-y-4">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h4 className="font-medium">
+                                    {party.name || `Party ${index + 1}`}
+                                  </h4>
+                                  {party.email && (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                      <Mail className="h-4 w-4" />
+                                      {party.email}
+                                    </div>
+                                  )}
+                                </div>
+                                <Badge variant="outline">
+                                  <Building2 className="h-3 w-3 mr-1" />
+                                  {party.type}
+                                </Badge>
+                              </div>
+                              <Separator />
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
+                                  <div className="flex-1 text-sm">
+                                    {formatAddress(party.address)}
+                                  </div>
+                                </div>
+                                {party.jurisdiction && (
+                                  <div className="text-sm pl-6">
+                                    <span className="text-muted-foreground">Jurisdiction:</span>{' '}
+                                    {party.jurisdiction}
+                                  </div>
+                                )}
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+  
+                    <div>
+                      <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5" />
+                        Document Details
+                      </h3>
+                      <Card className="divide-y">
+                        {Object.entries(documentData.variables).map(([key, value]) => (
+                          <div key={key} className="p-4">
+                            <div className="text-sm font-medium text-muted-foreground mb-1">
+                              {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </div>
+                            <div className="text-sm">{formatValue(key, value)}</div>
+                          </div>
+                        ))}
+                      </Card>
+                    </div>
+                  </section>
+                </div>
+  
+                <DialogFooter className="p-6 border-t mt-auto">
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <span className="text-sm text-muted-foreground">
+                      Review your document details before generation
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <Button variant="outline" onClick={onClose} disabled={isDisabled}>
+                        Back to Edit
+                      </Button>
+                      <Button 
+                        onClick={handleGenerate} 
+                        disabled={isDisabled || errors.length > 0}
+                        className="min-w-[140px]"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Document'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogFooter>
+              </>
+            )}
+          </>
+        )}
+      </DialogContent>
+  
+      <UpgradePlanModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        currentPlan={null}
+        onSuccess={() => {
+          setShowSubscriptionError(false);
+          window.location.reload();
+        }}
+      />
+    </>
   );
 }

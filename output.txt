@@ -63,9 +63,21 @@
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   └── settings
+│   │       ├── QuickStats.tsx
 │   │       ├── SettingsClient.tsx
+│   │       ├── downloads.tsx
 │   │       ├── layout.tsx
-│   │       └── page.tsx
+│   │       ├── modals
+│   │       │   └── UpgradePlanModal.tsx
+│   │       ├── page.tsx
+│   │       ├── payment
+│   │       │   ├── [status]
+│   │       │   │   └── page.tsx
+│   │       │   └── loading.tsx
+│   │       └── sections
+│   │           ├── BillingSection.tsx
+│   │           ├── NotificationsSection.tsx
+│   │           └── ProfileSection.tsx
 │   ├── components
 │   │   ├── auth
 │   │   │   ├── LoginForm.tsx
@@ -120,6 +132,8 @@
 │   │   │   └── UseCases.tsx
 │   │   ├── layout
 │   │   │   └── LandingLayout.tsx
+│   │   ├── payment
+│   │   │   └── PaymentResult.tsx
 │   │   └── ui
 │   │       ├── alert-dialog.tsx
 │   │       ├── alert.tsx
@@ -137,6 +151,7 @@
 │   │       ├── input.tsx
 │   │       ├── label.tsx
 │   │       ├── popover.tsx
+│   │       ├── progress.tsx
 │   │       ├── resizable.tsx
 │   │       ├── scroll-area.tsx
 │   │       ├── select.tsx
@@ -157,12 +172,18 @@
 │   │   ├── use-toast.ts
 │   │   ├── useDocument.ts
 │   │   ├── useDocumentProgress.ts
+│   │   ├── useDownloads.ts
+│   │   ├── usePayment.ts
+│   │   ├── useUser.ts
 │   │   └── useWizardNavigation.ts
 │   ├── lib
 │   │   ├── api
 │   │   │   ├── auth.ts
 │   │   │   ├── document.ts
-│   │   │   └── middleware.ts
+│   │   │   ├── download.ts
+│   │   │   ├── middleware.ts
+│   │   │   ├── payment.ts
+│   │   │   └── user.ts
 │   │   ├── data
 │   │   │   └── locations.ts
 │   │   ├── presets
@@ -181,10 +202,14 @@
 │   └── types
 │       ├── auth.ts
 │       ├── document.ts
+│       ├── download.ts
+│       ├── enums.ts
 │       ├── party.ts
-│       └── template.ts
+│       ├── payment.ts
+│       ├── template.ts
+│       └── user.ts
 ├── tailwind.config.ts
 ├── tsconfig.json
 └── yarn.lock
 
-45 directories, 143 files
+50 directories, 163 files
