@@ -3,7 +3,8 @@
 import { authApi } from './auth';
 import type { 
   DownloadHistoryResponse, 
-  DownloadStatsResponse 
+  DownloadStatsResponse, 
+  RemainingDownloadsResponse
 } from '@/types/download';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -120,4 +121,21 @@ export const downloadApi = {
       });
     }
   }
+,
+
+async getRemainingDownloads(): Promise<RemainingDownloadsResponse> {
+  try {
+    const response = await authApi.authenticatedRequest<RemainingDownloadsResponse>(
+      `${API_BASE_URL}/api/downloads/remaining`
+    );
+    return response;
+  } catch (error: any) {
+    console.error('Remaining downloads error:', error);
+    throw new DownloadApiError({
+      status: error?.error?.status || 500,
+      message: error.message || 'Failed to fetch remaining downloads',
+      code: 'GET_REMAINING_DOWNLOADS_ERROR'
+    });
+  }
+}
 };

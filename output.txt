@@ -65,7 +65,9 @@
 │   │   └── settings
 │   │       ├── QuickStats.tsx
 │   │       ├── SettingsClient.tsx
-│   │       ├── downloads.tsx
+│   │       ├── downloads
+│   │       │   ├── DownloadHistoryClient.tsx
+│   │       │   └── page.tsx
 │   │       ├── layout.tsx
 │   │       ├── modals
 │   │       │   └── UpgradePlanModal.tsx
@@ -212,4 +214,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-50 directories, 163 files
+51 directories, 164 files

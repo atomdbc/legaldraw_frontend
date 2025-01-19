@@ -8,6 +8,15 @@ export interface DownloadRecord {
     file_size?: number;
     status: 'started' | 'completed' | 'failed';
   }
+  export interface RemainingDownloadsResponse {
+    has_active_plan: boolean;
+    plan_name: string | null;
+    is_unlimited: boolean;
+    total_downloads: number;
+    downloads_used: number;
+    downloads_remaining: number;
+    message: string | null;
+  }
   
   export interface PaginationInfo {
     skip: number;

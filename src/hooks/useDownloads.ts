@@ -6,7 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { 
   DownloadHistoryResponse, 
   DownloadStatsResponse,
-  DownloadPeriod
+  DownloadPeriod,
+  RemainingDownloadsResponse
 } from '@/types/download';
 
 interface UseDownloadsReturn {
@@ -14,6 +15,7 @@ interface UseDownloadsReturn {
   error: string | null;
   getDownloadHistory: (skip?: number, limit?: number, startDate?: string, endDate?: string) => Promise<DownloadHistoryResponse | null>;
   getDownloadStats: (period?: DownloadPeriod) => Promise<DownloadStatsResponse | null>;
+  getRemainingDownloads: () => Promise<RemainingDownloadsResponse | null>;
   trackDownload: (documentId: string, fileSize: number) => Promise<boolean>;
   clearError: () => void;
 }
@@ -91,12 +93,32 @@ export const useDownloads = (): UseDownloadsReturn => {
     }
   }, [toast]);
 
+  const getRemainingDownloads = useCallback(async (): Promise<RemainingDownloadsResponse | null> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await downloadApi.getRemainingDownloads();
+      return response;
+    } catch (err: any) {
+      const errorMessage = err.error?.message || 'Failed to fetch remaining downloads';
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Download Limit Error",
+        description: errorMessage
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
   return {
     isLoading,
     error,
     getDownloadHistory,
     getDownloadStats,
+    getRemainingDownloads,
     trackDownload,
     clearError
-  };
-};
+  }}

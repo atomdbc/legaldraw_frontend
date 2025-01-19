@@ -5,8 +5,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { UpgradePlanModal } from '../modals/UpgradePlanModal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDownloads } from '@/hooks/useDownloads';
 import type { UserPlanResponse, UsageStatsResponse } from '@/types/payment';
+import type { RemainingDownloadsResponse } from '@/types/download';
 
 interface BillingSectionProps {
   isLoading: boolean;
@@ -22,16 +24,31 @@ export function BillingSection({
   onRefresh 
 }: BillingSectionProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [downloadStats, setDownloadStats] = useState<RemainingDownloadsResponse | null>(null);
+  const { getRemainingDownloads } = useDownloads();
+
+  // Debug logs
+  console.log('Usage Stats:', usageStats);
+  console.log('Current Period:', usageStats?.current_period);
+  console.log('Remaining Generations:', usageStats?.current_period?.remaining_generations);
+
+  useEffect(() => {
+    const fetchDownloadStats = async () => {
+      const stats = await getRemainingDownloads();
+      if (stats) {
+        setDownloadStats(stats);
+      }
+    };
+
+    fetchDownloadStats();
+  }, [getRemainingDownloads]);
 
   if (isLoading) {
     return <BillingSectionLoading />;
   }
 
-  // Calculate key usage metrics
-  const remainingDocs = usageStats?.current_period?.remaining_generations || 0;
-  const remainingDownloads = userPlan?.plan?.download_limit 
-    ? userPlan.plan.download_limit - (usageStats?.current_period?.downloads_used || 0)
-    : 0;
+  // Calculate remaining docs and ensure it's not negative
+  const remainingDocs = Math.max(usageStats?.current_period?.remaining_generations || 0, 0);
 
   return (
     <div className="space-y-6">
@@ -67,17 +84,27 @@ export function BillingSection({
                 )}
               </div>
 
-              {/* Usage Summary */}
-              <div className="grid grid-cols-2 gap-4">
+             {/* Usage Summary */}
+             <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-muted rounded-lg">
-                  <div className="text-sm font-medium mb-1">Documents</div>
-                  <div className="text-2xl font-bold">{remainingDocs}</div>
-                  <div className="text-sm text-muted-foreground">remaining</div>
+                  <div className="text-sm font-medium mb-1">Total Downloads</div>
+                  <div className="text-2xl font-bold">
+                    {downloadStats?.is_unlimited ? 
+                      '∞' : 
+                      downloadStats?.total_downloads || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">allowed</div>
                 </div>
                 <div className="p-4 bg-muted rounded-lg">
                   <div className="text-sm font-medium mb-1">Downloads</div>
-                  <div className="text-2xl font-bold">{remainingDownloads}</div>
-                  <div className="text-sm text-muted-foreground">remaining</div>
+                  <div className="text-2xl font-bold">
+                    {downloadStats?.is_unlimited ? 
+                      '∞' : 
+                      downloadStats?.downloads_remaining || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {downloadStats?.is_unlimited ? 'unlimited' : 'remaining'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -100,7 +127,12 @@ export function BillingSection({
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
         currentPlan={userPlan}
-        onSuccess={onRefresh}
+        onSuccess={() => {
+          onRefresh();
+          getRemainingDownloads().then(stats => {
+            if (stats) setDownloadStats(stats);
+          });
+        }}
       />
     </div>
   );
@@ -125,6 +157,5 @@ function BillingSectionLoading() {
         </div>
       </CardContent>
     </Card>
- 
-);
+  );
 }

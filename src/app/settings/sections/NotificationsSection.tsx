@@ -1,84 +1,91 @@
-import { useState } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, AlertTriangle, Mail, Clock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { FileText, AlertTriangle, Mail, Clock, RefreshCw } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { useNotifications } from '@/hooks/useNotifications';
+import type { NotificationSettings } from '@/types/notification';
 
-interface NotificationPreference {
-  id: string;
-  title: string;
-  description: string;
-  enabled: boolean;
-  icon: any;
-}
+const NOTIFICATION_CONFIGS = [
+  {
+    key: 'document_completion' as keyof NotificationSettings,
+    title: 'Document Completion',
+    description: 'Get notified when your document is ready',
+    icon: FileText
+  },
+  {
+    key: 'document_expiration' as keyof NotificationSettings,
+    title: 'Document Expiration',
+    description: 'Alerts before your documents expire',
+    icon: Clock
+  },
+  {
+    key: 'usage_alerts' as keyof NotificationSettings,
+    title: 'Usage Alerts',
+    description: 'Notifications when approaching limits',
+    icon: AlertTriangle
+  },
+  {
+    key: 'email_updates' as keyof NotificationSettings,
+    title: 'Email Updates',
+    description: 'Important account and security updates',
+    icon: Mail
+  }
+] as const;
 
-export function NotificationsSection({ isLoading }: { isLoading: boolean }) {
-  const { toast } = useToast();
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([
-    {
-      id: 'doc_completion',
-      title: 'Document Completion',
-      description: 'Get notified when your document is ready',
-      enabled: true,
-      icon: FileText
-    },
-    {
-      id: 'doc_expiration',
-      title: 'Document Expiration',
-      description: 'Alerts before your documents expire',
-      enabled: true,
-      icon: Clock
-    },
-    {
-      id: 'usage_alerts',
-      title: 'Usage Alerts',
-      description: 'Notifications when approaching limits',
-      enabled: true,
-      icon: AlertTriangle
-    },
-    {
-      id: 'email_updates',
-      title: 'Email Updates',
-      description: 'Important account and security updates',
-      enabled: true,
-      icon: Mail
-    }
-  ]);
+export function NotificationsSection() {
+  const { 
+    settings, 
+    isLoading, 
+    getSettings, 
+    updateSettings, 
+    updatingSettings 
+  } = useNotifications();
 
-  const handleToggle = async (prefId: string) => {
-    try {
-      const updatedPrefs = preferences.map(pref => 
-        pref.id === prefId ? { ...pref, enabled: !pref.enabled } : pref
-      );
-      setPreferences(updatedPrefs);
-      
-      toast({
-        title: "Updated",
-        description: "Notification settings saved"
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save settings"
-      });
-    }
-  };
+  // Load settings only once on mount
+  useEffect(() => {
+    let mounted = true;
 
-  if (isLoading) {
+    const loadSettings = async () => {
+      if (mounted) {
+        await getSettings();
+      }
+    };
+
+    loadSettings();
+
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty dependency array
+
+  const handleClick = useCallback(async (key: keyof NotificationSettings) => {
+    if (!settings) return;
+    
+    const newValue = !settings[key];
+    await updateSettings({ [key]: newValue }, key);
+  }, [settings, updateSettings]);
+
+  const handleRefresh = useCallback(async () => {
+    await getSettings();
+  }, [getSettings]);
+
+  if (isLoading && !settings) {
     return (
-      <Card>
+      <Card className="w-full">
         <CardHeader>
-          <Skeleton className="h-6 w-48" />
+          <CardTitle>Notifications</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center justify-between">
-              <Skeleton className="h-12 w-3/4" />
-              <Skeleton className="h-6 w-10" />
+            <div key={i} className="flex items-center justify-between space-x-4">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-64" />
+              </div>
+              <Skeleton className="h-8 w-24" />
             </div>
           ))}
         </CardContent>
@@ -87,34 +94,56 @@ export function NotificationsSection({ isLoading }: { isLoading: boolean }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Notifications</CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {preferences.map((pref, index) => {
-            const Icon = pref.icon;
-            return (
-              <div key={pref.id}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-start gap-3">
-                    <Icon className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="space-y-1">
-                      <Label className="font-medium">{pref.title}</Label>
-                      <p className="text-sm text-muted-foreground">{pref.description}</p>
-                    </div>
+      <CardContent className="space-y-4">
+        {NOTIFICATION_CONFIGS.map((config, index) => {
+          const Icon = config.icon;
+          const isEnabled = settings?.[config.key] ?? false;
+          const isUpdating = updatingSettings.has(config.key);
+
+          return (
+            <div key={config.key}>
+              <div className="flex items-center justify-between space-x-4">
+                <div className="flex items-center space-x-4">
+                  <div className="rounded-lg border p-2">
+                    <Icon className="h-6 w-6" />
                   </div>
-                  <Switch
-                    checked={pref.enabled}
-                    onCheckedChange={() => handleToggle(pref.id)}
-                  />
+                  <div className="space-y-1">
+                    <Label>{config.title}</Label>
+                    <p className="text-sm text-gray-500">
+                      {config.description}
+                    </p>
+                  </div>
                 </div>
-                {index < preferences.length - 1 && <Separator className="my-4" />}
+                <Button
+                  onClick={() => handleClick(config.key)}
+                  variant={isEnabled ? "default" : "outline"}
+                  size="sm"
+                  disabled={isUpdating}
+                  className="min-w-[100px]"
+                >
+                  {isUpdating ? 'Updating...' : isEnabled ? 'Enabled' : 'Disabled'}
+                </Button>
               </div>
-            );
-          })}
-        </div>
+              {index < NOTIFICATION_CONFIGS.length - 1 && (
+                <Separator className="my-4" />
+              )}
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
   );
