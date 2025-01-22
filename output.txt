@@ -175,6 +175,7 @@
 │   │   ├── useDocument.ts
 │   │   ├── useDocumentProgress.ts
 │   │   ├── useDownloads.ts
+│   │   ├── useNotifications.ts
 │   │   ├── usePayment.ts
 │   │   ├── useUser.ts
 │   │   └── useWizardNavigation.ts
@@ -184,6 +185,7 @@
 │   │   │   ├── document.ts
 │   │   │   ├── download.ts
 │   │   │   ├── middleware.ts
+│   │   │   ├── notification.ts
 │   │   │   ├── payment.ts
 │   │   │   └── user.ts
 │   │   ├── data
@@ -206,6 +208,7 @@
 │       ├── document.ts
 │       ├── download.ts
 │       ├── enums.ts
+│       ├── notification.ts
 │       ├── party.ts
 │       ├── payment.ts
 │       ├── template.ts
@@ -214,4 +217,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-51 directories, 164 files
+51 directories, 167 files

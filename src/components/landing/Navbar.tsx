@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, Sparkles } from "lucide-react";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,30 +15,14 @@ export const Navbar = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-              <path 
-                d="M12 2L2 7L12 12L22 7L12 2Z" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-              <path 
-                d="M2 17L12 22L22 17" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-              <path 
-                d="M2 12L12 17L22 12" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="text-xl font-semibold">LegalDraw</span>
+          <div className="relative h-8 w-8">
+        <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500" />
+        <div className="absolute inset-0.5 rounded-[6px] bg-white dark:bg-gray-950" />
+        <Sparkles className="absolute inset-1 h-6 w-6 text-blue-500" />
+      </div>
+      <span className="font-semibold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          LegalDraw
+        </span>
           </div>
 
           {/* Desktop Navigation */}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,7 +23,11 @@ import {
   Terminal,
   MessageSquare,
   Stethoscope,
-  LifeBuoy
+  LifeBuoy,
+  X,
+  Sparkles,
+  Command,
+  Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser } from '@/hooks/useUser';
@@ -35,6 +40,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -42,93 +56,118 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
-// Main navigation items with descriptions for tooltips
+// Main navigation with metadata
 const mainNavigation = [
   { 
     name: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
-    description: 'Overview of your workspace'
+    description: 'Overview and insights',
+    color: 'text-blue-500'
   },
   { 
     name: 'Documents',
     href: '/documents',
     icon: FileText,
-    description: 'Manage your legal documents'
+    description: 'Manage legal documents',
+    color: 'text-purple-500'
   },
   { 
     name: 'Analytics',
     href: '/settings/downloads',
     icon: BarChart3,
-    description: 'Document analytics and insights'
+    description: 'Document insights',
+    color: 'text-emerald-500'
   },
   { 
     name: 'Settings',
     href: '/settings',
     icon: Settings,
-    description: 'Manage your preferences'
-  }
-];
-
-// Additional features (disabled/upcoming)
-const additionalFeatures = [
-  { 
-    name: 'Teams',
-    href: '/teams',
-    icon: Users,
-    description: 'Collaborate with team members',
-    disabled: true
-  },
-  { 
-    name: 'API',
-    href: '/api',
-    icon: Terminal,
-    description: 'Access developer tools',
-    disabled: true
-  },
-  { 
-    name: 'AI Chat',
-    href: '/chat',
-    icon: MessageSquare,
-    description: 'Chat with our AI assistant',
-    disabled: true
-  },
-  { 
-    name: 'Legal Doctor',
-    href: '/doctor',
-    icon: Stethoscope,
-    description: 'AI-powered document review',
-    disabled: true
+    description: 'Account settings',
+    color: 'text-gray-500'
   },
   { 
     name: 'Support',
     href: '/support',
     icon: LifeBuoy,
-    description: '24/7 customer support',
-    disabled: true
+    description: 'Get help',
+    color: 'text-amber-500'
   }
 ];
 
-const Logo = ({ collapsed = false }) => (
-  <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-    <div className="flex-shrink-0">
-      <svg className="w-8 h-8 text-zinc-900" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    </div>
-    {!collapsed && <span className="font-semibold text-lg text-zinc-900">LegalDraw</span>}
-  </div>
-);
+// Premium features (some disabled)
+const premiumFeatures = [
+  { 
+    name: 'Teams',
+    href: '/teams',
+    icon: Users,
+    description: 'Collaborate with others',
+    badge: 'Soon',
+    disabled: true,
+    color: 'text-indigo-500'
+  },
+  { 
+    name: 'API Access',
+    href: '/api',
+    icon: Terminal,
+    description: 'Developer tools',
+    badge: 'Soon',
+    color: 'text-cyan-500'
+  },
+  { 
+    name: 'AI Chat',
+    href: '/chat',
+    icon: MessageSquare,
+    description: 'AI assistance',
+    badge: 'Soon',
+    color: 'text-pink-500'
+  },
+  { 
+    name: 'Doc Review',
+    href: '/review',
+    icon: Stethoscope,
+    description: 'AI document review',
+    badge: 'Soon',
+    disabled: true,
+    color: 'text-rose-500'
+  }
+];
 
-const NavItem = ({ item, isCollapsed }) => {
+function Logo({ collapsed = false }) {
+  return (
+    <div className={cn(
+      "flex items-center gap-3",
+      collapsed ? "justify-center" : "px-4"
+    )}>
+      <div className="relative h-8 w-8">
+        <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500" />
+        <div className="absolute inset-0.5 rounded-[6px] bg-white dark:bg-gray-950" />
+        <Sparkles className="absolute inset-1 h-6 w-6 text-blue-500" />
+      </div>
+      {!collapsed && (
+        <span className="font-semibold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          LegalDraw
+        </span>
+      )}
+    </div>
+  );
+}
+
+function NavItem({ 
+  item, 
+  isCollapsed, 
+  isChild = false 
+}: { 
+  item: any; 
+  isCollapsed: boolean;
+  isChild?: boolean;
+}) {
   const pathname = usePathname();
   const isActive = pathname === item.href;
   
@@ -136,51 +175,61 @@ const NavItem = ({ item, isCollapsed }) => {
     <Link
       href={item.disabled ? '#' : item.href}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ease-in-out",
-        isActive ? "bg-zinc-900 text-white shadow-sm" : "text-zinc-600",
-        !item.disabled && "hover:bg-zinc-50 hover:text-zinc-900",
+        "group flex items-center gap-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ease-in-out",
+        isActive 
+          ? "bg-gray-900 text-white" 
+          : "text-gray-600 dark:text-gray-400",
+        !item.disabled && "hover:bg-gray-50 dark:hover:bg-gray-900/50",
         isCollapsed && "justify-center w-10 px-0",
-        item.disabled && "opacity-60 cursor-not-allowed"
+        item.disabled && "opacity-50 cursor-not-allowed",
+        isChild && "ml-4 py-2"
       )}
       onClick={(e) => item.disabled && e.preventDefault()}
     >
       <item.icon className={cn(
-        "w-[18px] h-[18px]",
-        isActive ? "text-white" : "text-zinc-500",
-        !item.disabled && "group-hover:text-zinc-900"
+        "flex-shrink-0 w-5 h-5",
+        item.color,
+        isActive && "text-white"
       )} />
-      {!isCollapsed && <span>{item.name}</span>}
+      
+      {!isCollapsed && (
+        <>
+          <span className="flex-1">{item.name}</span>
+          {item.badge && (
+            <Badge variant={isActive ? "outline" : "secondary"} className="ml-auto">
+              {item.badge}
+            </Badge>
+          )}
+        </>
+      )}
     </Link>
   );
 
-  return (
-    <Tooltip delayDuration={0}>
-      <TooltipTrigger asChild>
+  if (isCollapsed) {
+    return (
+      <div className="relative group">
         {link}
-      </TooltipTrigger>
-      <TooltipContent 
-        side={isCollapsed ? "right" : "right"} 
-        className="bg-zinc-900 text-white border-0"
-      >
-        <div className="flex flex-col gap-1">
-          <p className="font-medium">{item.name}</p>
-          <p className="text-xs text-zinc-300">{item.description}</p>
-          {item.disabled && (
-            <p className="text-xs text-blue-300">Coming soon</p>
-          )}
+        <div className="absolute left-full pl-2 ml-1 hidden group-hover:block">
+          <div className="bg-white dark:bg-gray-800 px-2 py-1 rounded-md shadow-lg whitespace-nowrap">
+            <div className="font-medium">{item.name}</div>
+            <div className="text-xs text-gray-500">{item.description}</div>
+            {item.badge && <Badge variant="secondary" className="mt-1">{item.badge}</Badge>}
+          </div>
         </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
+      </div>
+    );
+  }
 
-export default function DashboardShell({ children }) {
+  return link;
+}
+
+export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isMobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { getProfile, isLoading } = useUser();
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -198,56 +247,99 @@ export default function DashboardShell({ children }) {
     setMobileSidebarOpen(false);
   }, [pathname]);
 
-  const Sidebar = ({ isCollapsed }) => (
-    <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center justify-between border-b px-4">
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCommandOpen(open => !open);
+      }
+    };
+
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
+
+  const Sidebar = ({ isCollapsed }: { isCollapsed: boolean }) => (
+    <div className="flex h-full flex-col gap-y-5">
+      <div className="flex h-16 items-center justify-between border-b">
         <Logo collapsed={isCollapsed} />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8"
-          onClick={() => setSidebarCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
+        {!isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2 h-8 w-8"
+            onClick={() => setSidebarCollapsed(true)}
+          >
             <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
+          </Button>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3">
-        <nav className="space-y-1">
-          {mainNavigation.map((item) => (
-            <NavItem key={item.name} item={item} isCollapsed={isCollapsed} />
-          ))}
-          
-          <div className="my-4 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent" />
-          
-          {additionalFeatures.map((item) => (
-            <NavItem key={item.name} item={item} isCollapsed={isCollapsed} />
-          ))}
+      <div className="flex-1 flex flex-col gap-y-7 px-2">
+        {/* Search Trigger */}
+        {!isCollapsed && (
+          <button
+            onClick={() => setIsCommandOpen(true)}
+            className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-500 rounded-lg border shadow-sm hover:bg-gray-50 dark:hover:bg-gray-900/50"
+          >
+            <Search className="w-4 h-4" />
+            <span className="flex-1 text-left">Quick search...</span>
+            <kbd className="ml-auto text-xs bg-gray-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+          </button>
+        )}
+
+        {/* Main Navigation */}
+        <nav className="flex flex-col gap-y-7">
+          <div className="space-y-1">
+            {mainNavigation.map((item) => (
+              <NavItem key={item.name} item={item} isCollapsed={isCollapsed} />
+            ))}
+          </div>
+
+          <div>
+            <div className={cn(
+              "flex items-center gap-2 px-3 mb-2",
+              isCollapsed && "justify-center"
+            )}>
+              {!isCollapsed && (
+                <span className="text-xs font-semibold text-gray-500">FEATURES</span>
+              )}
+              <Badge variant="secondary" className="ml-auto">Pro</Badge>
+            </div>
+            <div className="space-y-1">
+              {premiumFeatures.map((item) => (
+                <NavItem key={item.name} item={item} isCollapsed={isCollapsed} />
+              ))}
+            </div>
+          </div>
         </nav>
       </div>
 
-      <div className="border-t p-3">
+      {/* User Menu */}
+      <div className="border-t p-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className={cn("w-full gap-3", isCollapsed && "justify-center px-0")}
+              className={cn(
+                "w-full gap-2 px-2", 
+                isCollapsed ? "justify-center" : "justify-start"
+              )}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100">
-                <User className="h-4 w-4 text-zinc-600" />
-              </div>
-              {!isCollapsed && userData && (
-                <div className="flex flex-1 items-center justify-between">
-                  <div className="text-sm">
-                    <p className="font-medium text-zinc-900">{userData.name}</p>
-                    <p className="text-xs text-zinc-500">{userData.email}</p>
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={userData?.avatar} />
+                <AvatarFallback>
+                  {userData?.name?.charAt(0) || <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              {!isCollapsed && (
+                <>
+                  <div className="flex flex-col items-start flex-1">
+                    <span className="text-sm font-medium">{userData?.name}</span>
+                    <span className="text-xs text-gray-500">{userData?.email}</span>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-zinc-500" />
-                </div>
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                </>
               )}
             </Button>
           </DropdownMenuTrigger>
@@ -255,10 +347,10 @@ export default function DashboardShell({ children }) {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/settings">Profile Settings</Link>
+              <Link href="/settings/profile">Profile Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/settings">Billing</Link>
+              <Link href="/settings/billing">Billing & Plans</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-red-600">
@@ -271,11 +363,11 @@ export default function DashboardShell({ children }) {
   );
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Desktop Sidebar */}
       <div
         className={cn(
-          "hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col lg:border-r lg:bg-white",
+          "hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col lg:border-r lg:bg-white dark:lg:bg-gray-900",
           isSidebarCollapsed ? "lg:w-[68px]" : "lg:w-64"
         )}
       >
@@ -284,45 +376,232 @@ export default function DashboardShell({ children }) {
 
       {/* Mobile Sidebar */}
       <Sheet open={isMobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="w-[300px] p-0">
           <Sidebar isCollapsed={false} />
         </SheetContent>
       </Sheet>
+
+      {/* Command Menu */}
+      <CommandDialog open={isCommandOpen} onOpenChange={setIsCommandOpen}>
+        <CommandInput placeholder="Search across LegalDraw..." />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Navigation">
+            {mainNavigation.map((item) => (
+              <CommandItem
+                key={item.name}
+                onSelect={() => {
+                  setIsCommandOpen(false);
+                  window.location.href = item.href;
+                }}
+              >
+                <item.icon className={cn("mr-2 h-4 w-4", item.color)} />
+                <span>{item.name}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Features">
+            {premiumFeatures
+              .filter(item => !item.disabled)
+              .map((item) => (
+                <CommandItem
+                  key={item.name}
+                  onSelect={() => {
+                    setIsCommandOpen(false);
+                    window.location.href = item.href;
+                  }}
+                >
+                  <item.icon className={cn("mr-2 h-4 w-4", item.color)} />
+                  <span>{item.name}</span>
+                  {item.badge && (
+                    <Badge variant="secondary" className="ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </CommandItem>
+              ))}
+          </CommandGroup>
+          </CommandList>
+      </CommandDialog>
 
       {/* Main Content */}
       <div className={cn(
         "flex flex-1 flex-col",
         isSidebarCollapsed ? "lg:pl-[68px]" : "lg:pl-64"
       )}>
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-white px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileSidebarOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+        {/* Header */}
+        <header className="sticky top-0 z-40 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6">
+            {/* Left Section */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setMobileSidebarOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
 
-          <div className="flex flex-1 items-center gap-4">
-            <div className="w-full max-w-lg">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
-                <Input
-                  placeholder="Search..."
-                  className="pl-9 border-zinc-200 focus:ring-zinc-900"
-                />
+              {/* Desktop Search Bar */}
+              <div className="hidden md:block w-96">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-gray-500"
+                  onClick={() => setIsCommandOpen(true)}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  <span>Search...</span>
+                  <kbd className="ml-auto text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                    ⌘K
+                  </kbd>
+                </Button>
               </div>
+
+              {/* Mobile Search Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setIsCommandOpen(true)}
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Right Section */}
+            <div className="flex items-center gap-4">
+              {/* Conditional rendering for collapsed sidebar button */}
+              {isSidebarCollapsed && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hidden lg:flex"
+                  onClick={() => setSidebarCollapsed(false)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+
+              {/* Notifications */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-blue-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel className="flex items-center justify-between">
+                    Notifications
+                    <Badge variant="secondary">5 New</Badge>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {/* Example notification items */}
+                  {[1, 2, 3].map((_, i) => (
+                    <DropdownMenuItem key={i} className="flex flex-col items-start gap-1 p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Sparkles className="h-4 w-4 text-blue-500" />
+                        Document Generated
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Your document has been successfully generated.
+                      </p>
+                      <span className="text-xs text-gray-400">2 mins ago</span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="w-full text-center text-sm text-blue-500">
+                    View All Notifications
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Help Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <LifeBuoy className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => window.location.href = '/support'}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Support
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/documentation'}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Documentation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/tutorials'}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Video Tutorials
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {/* <DropdownMenuItem>
+                    <Terminal className="mr-2 h-4 w-4" />
+                    API Reference
+                  </DropdownMenuItem> */}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Mobile User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={userData?.avatar} />
+                      <AvatarFallback>
+                        {userData?.name?.charAt(0) || <User className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{userData?.name}</p>
+                      <p className="text-xs text-gray-500">{userData?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings/profile">Profile Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings/billing">Billing & Plans</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-5 w-5" />
-          </Button>
+          {/* Mobile Search (Expandable) */}
+          <div className="border-t py-2 px-4 md:hidden">
+            <Button
+              variant="outline"
+              className="w-full justify-start text-gray-500"
+              onClick={() => setIsCommandOpen(true)}
+            >
+              <Search className="mr-2 h-4 w-4" />
+              <span>Search...</span>
+              <kbd className="ml-auto text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                ⌘K
+              </kbd>
+            </Button>
+          </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8">
-          {children}
+        {/* Main Content Area */}
+        <main className="flex-1">
+          <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

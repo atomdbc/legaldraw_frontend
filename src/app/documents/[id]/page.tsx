@@ -50,7 +50,8 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     getDocumentContent, 
     isLoading,
     downloadDocument,
-    isDownloading
+    isDownloading,
+    clearDownloadError
   } = useDocument();
 
   // State

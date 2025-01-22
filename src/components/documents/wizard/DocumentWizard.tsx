@@ -2,16 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { WizardSteps, Step } from '@/components/documents/ui/WizardSteps';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Save, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { cn } from '@/lib/utils';
 
-const wizardSteps: Omit<Step, 'status'>[] = [
-  { id: 'type', title: 'Document Type', description: 'Select type' },
-  { id: 'parties', title: 'Parties', description: 'Add parties' },
-  { id: 'details', title: 'Details', description: 'Fill details' },
-  { id: 'preview', title: 'Preview', description: 'Review' }
+const wizardSteps = [
+  { id: 'type', title: 'Document Type', description: 'Select type', icon: '1' },
+  { id: 'parties', title: 'Parties', description: 'Add parties', icon: '2' },
+  { id: 'details', title: 'Details', description: 'Fill details', icon: '3' },
+  { id: 'preview', title: 'Preview', description: 'Review', icon: '4' }
 ];
 
 interface DocumentWizardProps {
@@ -25,7 +25,7 @@ interface DocumentWizardProps {
 }
 
 export function DocumentWizard(props: DocumentWizardProps) {
-  const { children, currentStepIndex, onNext, onBack, allowNext = true, isSaving = false, documentType } = props;
+  const { children, currentStepIndex, onNext, onBack, allowNext = true, isSaving = false } = props;
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -45,7 +45,6 @@ export function DocumentWizard(props: DocumentWizardProps) {
       }
       if (!shouldProceed) {
         setIsProcessing(false);
-        return;
       }
     } catch (error) {
       console.error('Navigation error:', error);
@@ -58,28 +57,69 @@ export function DocumentWizard(props: DocumentWizardProps) {
     }
   };
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
-      <WizardSteps steps={wizardSteps} currentStep={currentStepIndex} />
-      
+      <div className="border-b bg-white">
+        <div className="container py-4">
+          <div className="mx-auto max-w-5xl">
+            <nav aria-label="Progress">
+              <ol className="flex items-center gap-2">
+                {wizardSteps.map((step, index) => {
+                  const isActive = currentStepIndex === index;
+                  const isCompleted = currentStepIndex > index;
+                  return (
+                    <li key={step.id} className="flex-1">
+                      <div className="flex flex-col md:flex-row items-center gap-2">
+                        <div 
+                          className={cn(
+                            "flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors",
+                            isCompleted && "bg-primary text-primary-foreground",
+                            isActive && "bg-primary/10 text-primary border-2 border-primary",
+                            !isActive && !isCompleted && "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-5 w-5" />
+                          ) : (
+                            step.icon
+                          )}
+                        </div>
+                        <div className="hidden md:block flex-1">
+                          <div className="text-sm font-medium">{step.title}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{step.description}</div>
+                        </div>
+                        {index < wizardSteps.length - 1 && (
+                          <div className="flex-1 hidden md:block">
+                            <div 
+                              className={cn(
+                                "h-0.5 w-full",
+                                isCompleted ? "bg-primary" : "bg-muted"
+                              )}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+          </div>
+        </div>
+      </div>
+
       <div className="flex-1 container py-8 overflow-auto">
         <div className="mx-auto max-w-5xl">
           {children}
         </div>
       </div>
 
-      <div className="border-t py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-t py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky bottom-0">
         <div className="container">
           <div className="mx-auto max-w-5xl flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={handleBack}
+              onClick={onBack}
               disabled={currentStepIndex === 0 || isDisabled}
             >
               <ChevronLeft className="mr-2 h-4 w-4" />

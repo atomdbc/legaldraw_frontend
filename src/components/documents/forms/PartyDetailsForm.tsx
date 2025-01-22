@@ -1,5 +1,3 @@
-// src/components/documents/forms/PartyDetailsForm.tsx
-
 'use client';
 
 import { Party, PartyType, PARTY_TYPES, ValidationErrors } from "@/types/party";
@@ -38,36 +36,39 @@ export function PartyDetailsForm({
   };
 
   return (
-    <Card className="p-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-semibold">Party Details</h3>
-            <p className="text-sm text-muted-foreground">
-              Enter the details for this party
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {party.type !== 'individual' && (
-              <Badge variant="outline" className="font-normal">
-                Organization
-              </Badge>
-            )}
-            {canRemove && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onRemove}
-                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+    <Card className="flex flex-col h-full p-6 overflow-hidden">
+      <div className="flex flex-col h-full space-y-6 overflow-hidden">
+        {/* Header - Fixed at top */}
+        <div className="sticky top-0 bg-white z-10 pb-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-lg font-semibold">Party Details</h3>
+              <p className="text-sm text-muted-foreground">
+                Enter the details for this party
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {party.type !== 'individual' && (
+                <Badge variant="outline" className="font-normal">
+                  Organization
+                </Badge>
+              )}
+              {canRemove && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onRemove}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="grid gap-6">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto pr-2 grid gap-6">
           {/* Party Type */}
           <div className="grid gap-4">
             <Label className="flex items-center gap-2">
@@ -214,34 +215,34 @@ export function PartyDetailsForm({
           </div>
 
           {/* Jurisdiction */}
-<div className="grid gap-2">
-  <Label className="flex items-center gap-2">
-    Jurisdiction
-    {party.type !== 'individual' && (
-      <Badge variant="default" className="font-normal">
-        Required for Organizations
-      </Badge>
-    )}
-    {errors.jurisdiction && (
-      <span className="text-xs text-red-500">{errors.jurisdiction}</span>
-    )}
-  </Label>
-  <Select
-    value={party.jurisdiction}
-    onValueChange={(value) => onUpdate({ jurisdiction: value })}
-  >
-    <SelectTrigger className={errors.jurisdiction ? "border-red-500" : ""}>
-      <SelectValue placeholder="Select jurisdiction" />
-    </SelectTrigger>
-    <SelectContent>
-      {jurisdictions.map((jurisdiction) => (
-        <SelectItem key={jurisdiction} value={jurisdiction}>
-          {jurisdiction}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+          <div className="grid gap-2">
+            <Label className="flex items-center gap-2">
+              Jurisdiction
+              {party.type !== 'individual' && (
+                <Badge variant="default" className="font-normal">
+                  Required for Organizations
+                </Badge>
+              )}
+              {errors.jurisdiction && (
+                <span className="text-xs text-red-500">{errors.jurisdiction}</span>
+              )}
+            </Label>
+            <Select
+              value={party.jurisdiction}
+              onValueChange={(value) => onUpdate({ jurisdiction: value })}
+            >
+              <SelectTrigger className={errors.jurisdiction ? "border-red-500" : ""}>
+                <SelectValue placeholder="Select jurisdiction" />
+              </SelectTrigger>
+              <SelectContent>
+                {jurisdictions.map((jurisdiction) => (
+                  <SelectItem key={jurisdiction} value={jurisdiction}>
+                    {jurisdiction}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Address Section */}
           <div className="space-y-4">
@@ -329,20 +330,19 @@ export function PartyDetailsForm({
           </div>
 
           {/* Error Summary */}
-{errors && Object.keys(errors).length > 0 && (
-  <div className="rounded-lg bg-red-50 p-4">
-    <div className="flex items-center gap-2 text-red-600">
-      <AlertCircle className="h-4 w-4" />
-      <h4 className="text-sm font-medium">Please fix the following errors:</h4>
-    </div>
-    <ul className="mt-2 list-disc pl-5 text-sm text-red-600">
-      {Object.entries(errors).map(([field, error]) => (
-        <li key={field}>{error.message}</li>
-      ))}
-    </ul>
-  </div>
-)}
-          
+          {errors && Object.keys(errors).length > 0 && (
+            <div className="rounded-lg bg-red-50 p-4">
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-4 w-4" />
+                <h4 className="text-sm font-medium">Please fix the following errors:</h4>
+              </div>
+              <ul className="mt-2 list-disc pl-5 text-sm text-red-600">
+                {Object.entries(errors).map(([field, error]) => (
+                  <li key={field}>{error.message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </Card>

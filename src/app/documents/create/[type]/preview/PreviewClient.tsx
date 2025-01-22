@@ -1,22 +1,15 @@
-'use client';
-
+"use client"
 import { useState, useEffect, useRef } from 'react';
-import { DocumentWizard } from '@/components/documents/wizard/DocumentWizard';
-import { DocumentPreviewPanel } from '@/components/documents/preview/DocumentPreviewPanel';
-import { ShareModal } from '@/components/documents/preview/ShareModal';
 import { useToast } from '@/hooks/use-toast';
-import { useWizardNavigation } from '@/hooks/useWizardNavigation';
-import { useDocumentProgress } from '@/hooks/useDocumentProgress';
-import { useDocument } from '@/hooks/useDocument';
 import { useRouter } from 'next/navigation';
 import { documentApi } from '@/lib/api/document';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, Download } from 'lucide-react';
+import { useDocument } from '@/hooks/useDocument';
 import { usePayment } from '@/hooks/usePayment';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Download, ChevronLeft } from 'lucide-react';
 import { PlanType, Currency, BillingCycle } from '@/types/enums';
 import type { PaymentCreateRequest } from '@/types/payment';
-
 
 interface PreviewClientProps {
   documentType: string;
@@ -26,15 +19,16 @@ interface PreviewClientProps {
 export function PreviewClient({ documentType, documentId }: PreviewClientProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { data: progressData } = useDocumentProgress();
-  const { navigateBack } = useWizardNavigation(documentType);
   const [isLoading, setIsLoading] = useState(true);
   const [documentContent, setDocumentContent] = useState<any>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const { downloadDocument, isDownloading, downloadError, clearDownloadError } = useDocument();
   const { createPayment, getPlans } = usePayment();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Payment handler
   const handlePerDocumentPayment = async () => {
     setIsProcessingPayment(true);
     try {
@@ -63,52 +57,11 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
           title: "Payment Initiated",
           description: "Redirecting to payment gateway..."
         });
-        window.location.href = response.payment_metadata.payment_link;
-      }
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      toast({
-        variant: "destructive",
-        title: "Payment Error",
-        description: error.message || "Failed to process payment"
-      });
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-  
-  const handleUsagePayment = async () => {
-    setIsProcessingPayment(true);
-    try {
-      const plans = await getPlans();
-      const usagePlan = plans.find(p => p.name === PlanType.USAGE_BASED);
-      
-      if (!usagePlan) throw new Error('Usage plan not found');
-  
-      const paymentData: PaymentCreateRequest = {
-        amount: 2,
-        currency: Currency.USD,
-        plan_id: usagePlan.id,
-        payment_type: 'one_time',
-        payment_metadata: {
-          document_id: documentId,
-          plan_name: PlanType.USAGE_BASED,
-          billing_cycle: BillingCycle.USAGE_BASED,
-          currency_code: Currency.USD,
-          original_amount: 2
+        if (typeof window !== 'undefined') {
+          window.location.href = response.payment_metadata.payment_link;
         }
-      };
-  
-      const response = await createPayment(paymentData);
-      if (response?.payment_metadata?.payment_link) {
-        toast({
-          title: "Payment Initiated",
-          description: "Redirecting to payment gateway..."
-        });
-        window.location.href = response.payment_metadata.payment_link;
       }
     } catch (error: any) {
-      console.error('Payment error:', error);
       toast({
         variant: "destructive",
         title: "Payment Error",
@@ -119,7 +72,7 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
     }
   };
 
-  
+  // Load document
   useEffect(() => {
     const loadDocument = async () => {
       if (!documentId) {
@@ -130,6 +83,14 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
       try {
         const doc = await documentApi.getDocumentContent(documentId);
         setDocumentContent(doc);
+        
+        if (typeof window !== 'undefined') {
+          // Count pages by checking div.page elements in content
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = doc.content;
+          const pageCount = tempDiv.querySelectorAll('.page').length;
+          setTotalPages(pageCount || 1);
+        }
       } catch (error) {
         toast({
           variant: "destructive",
@@ -144,139 +105,206 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
     loadDocument();
   }, [documentId, toast]);
 
+  // Style iframe content and add page navigation
   useEffect(() => {
     const iframe = previewIframeRef.current;
     if (iframe?.contentWindow) {
       iframe.onload = () => {
         const doc = iframe.contentDocument;
         if (doc) {
+          // Add styles
           const style = doc.createElement('style');
           style.textContent = `
             body {
               margin: 0;
-              padding: 24px;
+              padding: 24px 32px;
               box-sizing: border-box;
-              max-width: 1000px; /* Increased from 800px */
-              margin: 0 auto;
+              width: 100%;
+              max-width: 100%;
               overflow-x: hidden !important;
+              background-color: white;
+              scroll-behavior: smooth;
             }
             .page {
               width: 100% !important;
+              max-width: 1400px !important;
               margin: 0 auto !important;
               box-shadow: none !important;
               padding: 0 !important;
+              margin-bottom: 2rem !important;
+              scroll-margin-top: 2rem;
             }
-            /* Add better typography */
+            @media (min-width: 1600px) {
+              .page {
+                max-width: 1600px !important;
+              }
+            }
             p, ul, ol {
               line-height: 1.6;
               margin-bottom: 1em;
             }
           `;
           doc.head.appendChild(style);
+
+          // Add page IDs for navigation
+          const pages = doc.querySelectorAll('.page');
+          pages.forEach((page, index) => {
+            page.id = `page-${index + 1}`;
+          });
         }
       };
     }
   }, [documentContent]);
 
-  const handleBack = () => {
-    const prevRoute = navigateBack('preview');
-    if (prevRoute) {
-      router.push(prevRoute);
+  // Handle page navigation
+  const handlePageChange = (pageNum: number) => {
+    const iframe = previewIframeRef.current;
+    if (iframe?.contentDocument) {
+      const targetPage = iframe.contentDocument.getElementById(`page-${pageNum}`);
+      if (targetPage) {
+        targetPage.scrollIntoView({ behavior: 'smooth' });
+        setCurrentPage(pageNum);
+      }
     }
   };
 
+  // Handlers
+  const handleBack = () => router.back();
+  
   const handleDownload = async () => {
     if (!documentId) return;
-    
     try {
-        // Pass suppressToast to prevent toast error
-        await downloadDocument(documentId, { suppressToast: true });
-    } catch (error: any) {
-        // The hook will handle setting the download error state
-        // No need for additional error handling here since we're using the hook's state
-        return;
+      await downloadDocument(documentId, { suppressToast: true });
+    } catch (error) {
+      return;
     }
-};
+  };
+
+  // Thumbnail component
+  const Thumbnail = ({ pageNum }: { pageNum: number }) => (
+    <button
+      onClick={() => handlePageChange(pageNum)}
+      className={`w-full p-2 rounded-lg transition-all ${
+        currentPage === pageNum 
+          ? 'bg-primary/10 ring-1 ring-primary/20' 
+          : 'hover:bg-gray-100'
+      }`}
+    >
+      <div className="aspect-[8.5/11] rounded-md border bg-white shadow-sm overflow-hidden">
+        <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+          Page {pageNum}
+        </div>
+      </div>
+    </button>
+  );
 
   return (
-    <DocumentWizard
-      currentStepIndex={3}
-      onBack={handleBack}
-      allowNext={false}
-      documentType={documentType}
-    >
+    <div className="min-h-screen bg-gray-50">
+      {/* Payment Alert */}
       {downloadError && (
-  <div className="border-b bg-white/80 backdrop-blur-sm">
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-black/5 flex items-center justify-center">
-            <AlertCircle className="h-5 w-5 text-gray-900" />
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900">Access Required</h3>
-            <p className="text-sm text-gray-600">{downloadError.message}</p>
+        <div className="fixed inset-x-0 top-0 z-50">
+          <div className="bg-white border-b shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between gap-4 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <AlertCircle className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Access Required</h3>
+                    <p className="text-sm text-muted-foreground">{downloadError.message}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePerDocumentPayment}
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? 'Processing...' : 'Pay $2 for this document'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.location.href = '/settings';
+                      }
+                    }}
+                  >
+                    Upgrade Plan
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearDownloadError}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handlePerDocumentPayment}
-            disabled={isProcessingPayment}
-            className="min-w-[160px]"
-          >
-            {isProcessingPayment ? 'Processing...' : 'Pay $2 for this document'}
-          </Button>
-  
-          <Button
-            size="sm"
-            className="bg-black hover:bg-black/90 text-white"
-            onClick={() => window.location.href = '/settings'}
-          >
-            Upgrade Plan
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => clearDownloadError?.()}>
-            Dismiss
-          </Button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-      <div className="h-full grid grid-cols-[160px_1fr] gap-2">
-        <DocumentPreviewPanel
-          content={documentContent?.content || progressData?.data?.content || ''}
-          onPageChange={(pageNumber) => console.log(`Page ${pageNumber}`)}
-          previewIframeRef={previewIframeRef}
-        />
-        <div className="flex flex-col">
-          <div className="flex items-center justify-end gap-2 mb-2">
-            <ShareModal documentId={documentId || ''} />
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDownload}
-              disabled={isDownloading}
+      )}
+
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="text-muted-foreground hover:text-foreground"
             >
-              <Download className="h-4 w-4 mr-2" />
-              {isDownloading ? 'Downloading...' : 'Download'}
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back
             </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownload}
+                disabled={isDownloading}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloading ? 'Downloading...' : 'Download'}
+              </Button>
+            </div>
           </div>
-          <Card className="flex-1 h-full overflow-hidden bg-white">
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex min-h-[calc(100vh-4rem)]">
+        {/* Thumbnails Sidebar */}
+        <aside className="w-32 border-r bg-background">
+          <ScrollArea className="h-[calc(100vh-4rem)]">
+            <div className="p-2 space-y-2">
+              {Array.from({ length: totalPages }, (_, i) => (
+                <Thumbnail key={i + 1} pageNum={i + 1} />
+              ))}
+            </div>
+          </ScrollArea>
+        </aside>
+
+        {/* Document Preview */}
+        <div className="flex-1 bg-white">
+          {isLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="animate-spin h-8 w-8 border-3 border-primary rounded-full border-t-transparent" />
+            </div>
+          ) : (
             <iframe
               ref={previewIframeRef}
-              srcDoc={documentContent?.content || progressData?.data?.content}
+              srcDoc={documentContent?.content}
               className="w-full h-full border-0"
               title="Document Preview"
-              style={{
-                display: 'block',
-                backgroundColor: 'white'
-              }}
             />
-          </Card>
+          )}
         </div>
-      </div>
-    </DocumentWizard>
+      </main>
+    </div>
   );
 }
