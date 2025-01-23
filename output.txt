@@ -34,6 +34,9 @@
 │   │   │   ├── DocumentPreview.tsx
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
+│   │   ├── documentation
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
 │   │   ├── documents
 │   │   │   ├── [id]
 │   │   │   │   └── page.tsx
@@ -62,24 +65,28 @@
 │   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
-│   │   └── settings
-│   │       ├── QuickStats.tsx
-│   │       ├── SettingsClient.tsx
-│   │       ├── downloads
-│   │       │   ├── DownloadHistoryClient.tsx
-│   │       │   └── page.tsx
+│   │   ├── settings
+│   │   │   ├── QuickStats.tsx
+│   │   │   ├── SettingsClient.tsx
+│   │   │   ├── downloads
+│   │   │   │   ├── DownloadHistoryClient.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   ├── modals
+│   │   │   │   └── UpgradePlanModal.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── payment
+│   │   │   │   ├── [status]
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── loading.tsx
+│   │   │   └── sections
+│   │   │       ├── BillingSection.tsx
+│   │   │       ├── NotificationsSection.tsx
+│   │   │       └── ProfileSection.tsx
+│   │   └── support
+│   │       ├── SupportClient.tsx
 │   │       ├── layout.tsx
-│   │       ├── modals
-│   │       │   └── UpgradePlanModal.tsx
-│   │       ├── page.tsx
-│   │       ├── payment
-│   │       │   ├── [status]
-│   │       │   │   └── page.tsx
-│   │       │   └── loading.tsx
-│   │       └── sections
-│   │           ├── BillingSection.tsx
-│   │           ├── NotificationsSection.tsx
-│   │           └── ProfileSection.tsx
+│   │       └── page.tsx
 │   ├── components
 │   │   ├── auth
 │   │   │   ├── LoginForm.tsx
@@ -93,6 +100,16 @@
 │   │   │       ├── ActivityFeed.tsx
 │   │   │       ├── DocumentList.tsx
 │   │   │       └── TemplateGrid.tsx
+│   │   ├── documentation
+│   │   │   ├── DocContent.tsx
+│   │   │   ├── DocNavigation.tsx
+│   │   │   └── sections
+│   │   │       ├── AIFeatures.tsx
+│   │   │       ├── DocumentCreation.tsx
+│   │   │       ├── Introduction.tsx
+│   │   │       ├── PartyManagement.tsx
+│   │   │       ├── QuickStart.tsx
+│   │   │       └── UpcomingFeatures.tsx
 │   │   ├── documents
 │   │   │   ├── editor
 │   │   │   │   ├── DocumentEditor
@@ -105,9 +122,6 @@
 │   │   │   │   ├── PartyForm.tsx
 │   │   │   │   ├── PartyList.tsx
 │   │   │   │   └── VariableForm.tsx
-│   │   │   ├── preview
-│   │   │   │   ├── DocumentPreviewPanel.tsx
-│   │   │   │   └── ShareModal.tsx
 │   │   │   ├── ui
 │   │   │   │   ├── DocumentSettingsModal.tsx
 │   │   │   │   ├── WizardSteps.tsx
@@ -144,6 +158,7 @@
 │   │       ├── button.tsx
 │   │       ├── calendar.tsx
 │   │       ├── card.tsx
+│   │       ├── checkbox.tsx
 │   │       ├── color-picker.tsx
 │   │       ├── combobox.tsx
 │   │       ├── command.tsx
@@ -177,6 +192,7 @@
 │   │   ├── useDownloads.ts
 │   │   ├── useNotifications.ts
 │   │   ├── usePayment.ts
+│   │   ├── useSupport.ts
 │   │   ├── useUser.ts
 │   │   └── useWizardNavigation.ts
 │   ├── lib
@@ -187,6 +203,7 @@
 │   │   │   ├── middleware.ts
 │   │   │   ├── notification.ts
 │   │   │   ├── payment.ts
+│   │   │   ├── support.ts
 │   │   │   └── user.ts
 │   │   ├── data
 │   │   │   └── locations.ts
@@ -211,10 +228,11 @@
 │       ├── notification.ts
 │       ├── party.ts
 │       ├── payment.ts
+│       ├── support.ts
 │       ├── template.ts
 │       └── user.ts
 ├── tailwind.config.ts
 ├── tsconfig.json
 └── yarn.lock
 
-51 directories, 167 files
+54 directories, 182 files

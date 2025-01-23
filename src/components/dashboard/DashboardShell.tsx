@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useDocument } from '@/hooks/useDocument';
 import {
   Bell,
   Search,
@@ -118,6 +118,7 @@ const premiumFeatures = [
     icon: Terminal,
     description: 'Developer tools',
     badge: 'Soon',
+    disabled: true,
     color: 'text-cyan-500'
   },
   { 
@@ -126,6 +127,7 @@ const premiumFeatures = [
     icon: MessageSquare,
     description: 'AI assistance',
     badge: 'Soon',
+    disabled: true,
     color: 'text-pink-500'
   },
   { 
@@ -230,6 +232,15 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { getProfile, isLoading } = useUser();
   const [userData, setUserData] = useState<any>(null);
+  const { documents = [], fetchDocuments } = useDocument();
+const hasFetched = useRef(false);
+
+useEffect(() => {
+  if (!hasFetched.current) {
+    fetchDocuments(0, 3);
+    hasFetched.current = true;
+  }
+}, [fetchDocuments]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -486,37 +497,69 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
               {/* Notifications */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-blue-500" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel className="flex items-center justify-between">
-                    Notifications
-                    <Badge variant="secondary">5 New</Badge>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {/* Example notification items */}
-                  {[1, 2, 3].map((_, i) => (
-                    <DropdownMenuItem key={i} className="flex flex-col items-start gap-1 p-4">
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <Sparkles className="h-4 w-4 text-blue-500" />
-                        Document Generated
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Your document has been successfully generated.
-                      </p>
-                      <span className="text-xs text-gray-400">2 mins ago</span>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="w-full text-center text-sm text-blue-500">
-                    View All Notifications
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="icon" className="relative">
+      <Bell className="h-5 w-5" />
+      {documents?.length > 0 && (
+        <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-blue-500" />
+      )}
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-96">
+    <DropdownMenuLabel className="flex items-center justify-between">
+      Recent Documents
+      {documents?.length > 0 && (
+        <Badge variant="secondary">{documents.length} Recent</Badge>
+      )}
+    </DropdownMenuLabel>
+    <DropdownMenuSeparator />
+    
+    {documents?.slice(0, 3).map((doc, i) => (
+      <DropdownMenuItem 
+        key={doc.document_id} 
+        className="flex flex-col items-start gap-1 p-4 cursor-pointer"
+        onClick={() => window.location.href = `/documents/${doc.document_id}`}
+      >
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <FileText className="h-4 w-4 text-blue-500" />
+          {doc.title || doc.document_type?.replace('_', ' ') || 'Untitled Document'}
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "text-xs",
+              doc.status === 'COMPLETED' ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+            )}
+          >
+            {doc.status}
+          </Badge>
+          <span className="text-xs text-gray-500">
+            {new Date(doc.generated_at).toLocaleDateString()}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 line-clamp-2">
+          {doc.description || 'No description provided'}
+        </p>
+      </DropdownMenuItem>
+    ))}
+    
+    {documents?.length === 0 && (
+      <div className="p-4 text-center">
+        <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+        <p className="text-sm text-gray-600">No recent documents</p>
+      </div>
+    )}
+    
+    <DropdownMenuSeparator />
+    <DropdownMenuItem 
+      className="w-full text-center text-sm text-blue-500"
+      onClick={() => window.location.href = '/documents'}
+    >
+      View All Documents
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
 
               {/* Help Menu */}
               <DropdownMenu>
