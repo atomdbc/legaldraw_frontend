@@ -1,5 +1,3 @@
-// src/types/party.ts
-
 import { Building2, User, Shield, Users, FileCheck } from "lucide-react";
 
 // Backend-aligned address interface
@@ -82,7 +80,7 @@ export const PARTY_TYPES = [
 ] as const;
 
 export const INITIAL_PARTY: Party = {
-  id: '',
+  id: crypto.randomUUID(),
   type: 'corporation',
   name: '',
   email: '',
@@ -104,6 +102,11 @@ export interface ValidationError {
 
 export interface ValidationErrors {
   [key: string]: ValidationError;
+}
+
+// Extended type for the form props
+export interface PartyFormData extends Partial<Party> {
+  address?: Partial<AddressFrontend>;
 }
 
 // Utility functions to convert between frontend and backend formats
@@ -141,5 +144,70 @@ export const partyUtils = {
         country: party.address.country
       }
     };
+  },
+
+  // Helper to create a new party with default values
+  createNew(): Party {
+    return {
+      ...INITIAL_PARTY,
+      id: crypto.randomUUID()
+    };
+  },
+
+  // Helper to validate a party
+  validate(party: Partial<Party>): ValidationErrors {
+    const errors: ValidationErrors = {};
+    
+    if (!party.name) {
+      errors.name = { field: 'name', message: 'Name is required' };
+    }
+    
+    if (!party.type) {
+      errors.type = { field: 'type', message: 'Party type is required' };
+    }
+    
+    if (party.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(party.email)) {
+      errors.email = { field: 'email', message: 'Invalid email address' };
+    }
+    
+    if (party.type !== 'individual' && !party.jurisdiction) {
+      errors.jurisdiction = { 
+        field: 'jurisdiction', 
+        message: 'Jurisdiction is required for organizations' 
+      };
+    }
+    
+    // Address validation
+    if (party.address) {
+      if (!party.address.street) {
+        errors['address.street'] = { 
+          field: 'address.street', 
+          message: 'Street address is required' 
+        };
+      }
+      
+      if (!party.address.city) {
+        errors['address.city'] = { 
+          field: 'address.city', 
+          message: 'City is required' 
+        };
+      }
+      
+      if (!party.address.state) {
+        errors['address.state'] = { 
+          field: 'address.state', 
+          message: 'State is required' 
+        };
+      }
+      
+      if (!party.address.zipCode) {
+        errors['address.zipCode'] = { 
+          field: 'address.zipCode', 
+          message: 'ZIP code is required' 
+        };
+      }
+    }
+    
+    return errors;
   }
 };

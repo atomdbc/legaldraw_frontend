@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useDocument } from '@/hooks/useDocument';
 import {
@@ -24,7 +23,6 @@ import {
   MessageSquare,
   Stethoscope,
   LifeBuoy,
-  X,
   Sparkles,
   Command,
   Play
@@ -385,32 +383,119 @@ useEffect(() => {
         <Sidebar isCollapsed={isSidebarCollapsed} />
       </div>
 
-      {/* Mobile Sidebar */}
-      <Sheet open={isMobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-        <SheetContent side="left" className="w-[300px] p-0">
-          <Sidebar isCollapsed={false} />
-        </SheetContent>
-      </Sheet>
+    {/* Mobile Sidebar */}
+<Sheet open={isMobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+  <SheetContent side="left" className="w-[300px] p-0">
+    <SheetHeader className="sr-only">
+      <SheetTitle>Navigation Menu</SheetTitle>
+    </SheetHeader>
+    <div className="flex h-full flex-col">
+      {/* Only render the header once */}
+      <div className="flex h-16 items-center justify-between border-b px-4">
+        <Logo collapsed={false} />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setMobileSidebarOpen(false)}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+      {/* Mobile sidebar content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 flex flex-col gap-y-7 px-2 pt-4">
+          {/* Search button - always shown in mobile */}
+          <button
+            onClick={() => setIsCommandOpen(true)}
+            className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-500 rounded-lg border shadow-sm hover:bg-gray-50 dark:hover:bg-gray-900/50"
+          >
+            <Search className="w-4 h-4" />
+            <span className="flex-1 text-left">Quick search...</span>
+            <kbd className="ml-auto text-xs bg-gray-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+          </button>
+          <nav className="flex flex-col gap-y-7">
+            <div className="space-y-1">
+              {mainNavigation.map((item) => (
+                <NavItem key={item.name} item={item} isCollapsed={false} />
+              ))}
+            </div>
+            {/* Features section */}
+            <div>
+              <div className="flex items-center gap-2 px-3 mb-2">
+                <span className="text-xs font-semibold text-gray-500">FEATURES</span>
+                <Badge variant="secondary" className="ml-auto">Pro</Badge>
+              </div>
+              <div className="space-y-1">
+                {premiumFeatures.map((item) => (
+                  <NavItem key={item.name} item={item} isCollapsed={false} />
+                ))}
+              </div>
+            </div>
+          </nav>
+        </div>
+        {/* User Menu */}
+        <div className="border-t p-2 mt-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-full gap-2 px-2 justify-start">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={userData?.avatar} />
+                  <AvatarFallback>
+                    {userData?.name?.charAt(0) || <User className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start flex-1">
+                  <span className="text-sm font-medium">{userData?.name}</span>
+                  <span className="text-xs text-gray-500">{userData?.email}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {/* User menu content */}
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/settings/profile">Profile Settings</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/billing">Billing & Plans</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-600">
+                <LogOut className="mr-2 h-4 w-4" /> Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
+  </SheetContent>
+</Sheet>
 
       {/* Command Menu */}
-      <CommandDialog open={isCommandOpen} onOpenChange={setIsCommandOpen}>
-        <CommandInput placeholder="Search across LegalDraw..." />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Navigation">
-            {mainNavigation.map((item) => (
-              <CommandItem
-                key={item.name}
-                onSelect={() => {
-                  setIsCommandOpen(false);
-                  window.location.href = item.href;
-                }}
-              >
-                <item.icon className={cn("mr-2 h-4 w-4", item.color)} />
-                <span>{item.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+<CommandDialog open={isCommandOpen} onOpenChange={setIsCommandOpen}>
+  <SheetHeader className="sr-only">
+    <SheetTitle>Search LegalDraw</SheetTitle>
+  </SheetHeader>
+  <CommandInput placeholder="Search across LegalDraw..." />
+  <CommandList>
+    <CommandEmpty>No results found.</CommandEmpty>
+    <CommandGroup heading="Navigation">
+      {mainNavigation.map((item) => (
+        <CommandItem
+          key={item.name}
+          onSelect={() => {
+            setIsCommandOpen(false);
+            window.location.href = item.href;
+          }}
+        >
+          <item.icon className={cn("mr-2 h-4 w-4", item.color)} />
+          <span>{item.name}</span>
+        </CommandItem>
+      ))}
+    </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Features">
             {premiumFeatures

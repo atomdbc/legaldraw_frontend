@@ -1,4 +1,3 @@
-// src/app/(auth)/login/components/LoginForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -8,27 +7,60 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export function LoginForm() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { requestLoginOTP, verifyLoginOTP, verifyEmail } = useAuth();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showOTPInput, setShowOTPInput] = useState(false);
+  const [isVerification, setIsVerification] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRequestOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setInfo('');
+    setLoading(true);
+
+    try {
+      const response = await requestLoginOTP(email);
+      // Check response from backend
+      if (response?.status === 'needs_verification') {
+        setInfo('Please verify your email first. We\'ve sent you a new verification code.');
+        setIsVerification(true);
+      }
+      setShowOTPInput(true);
+    } catch (err: any) {
+      console.error('OTP request error:', err);
+      setError(err?.error?.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      await login(email, password);
+      if (isVerification) {
+        // Handle email verification
+        await verifyEmail(email, otp);
+        setInfo('Email verified successfully! You can now log in.');
+        setShowOTPInput(false);
+        setIsVerification(false);
+      } else {
+        // Handle normal login
+        await verifyLoginOTP(email, otp);
+      }
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err?.error?.message || 'Invalid email or password. Please try again.');
+      console.error('Verification error:', err);
+      setError(err?.error?.message || 'Invalid code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -36,14 +68,14 @@ export function LoginForm() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+      {!showOTPInput ? (
+        <form onSubmit={handleRequestOTP} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <Input
@@ -57,60 +89,86 @@ export function LoginForm() {
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Button
-                variant="link"
-                className="px-0"
-                onClick={() => router.push('/reset-password')}
-                type="button"
-              >
-                Forgot password?
-              </Button>
-            </div>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-zinc-500" />
-                ) : (
-                  <Eye className="h-4 w-4 text-zinc-500" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full"
-          size="lg"
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
-            </>
-          ) : (
-            'Sign in'
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending code...
+              </>
+            ) : (
+              'Request Code'
+            )}
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={handleSubmitOTP} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
-        </Button>
-      </form>
+          {info && (
+            <Alert>
+              <AlertDescription>{info}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="otp">
+              {isVerification ? 'Verification Code' : 'Login Code'}
+            </Label>
+            <Input
+              id="otp"
+              type="text"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="Enter the 6-digit code"
+              required
+              maxLength={6}
+              pattern="\d{6}"
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isVerification ? 'Verifying...' : 'Logging in...'}
+                </>
+              ) : (
+                isVerification ? 'Verify Email' : 'Login'
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={() => {
+                setShowOTPInput(false);
+                setIsVerification(false);
+                setOtp('');
+                setInfo('');
+                setError('');
+              }}
+              disabled={loading}
+            >
+              Back to email
+            </Button>
+          </div>
+        </form>
+      )}
 
       <div className="text-center text-sm text-zinc-500">
         Don't have an account?{' '}

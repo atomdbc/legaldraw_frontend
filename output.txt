@@ -109,6 +109,7 @@
 │   │   │       ├── Introduction.tsx
 │   │   │       ├── PartyManagement.tsx
 │   │   │       ├── QuickStart.tsx
+│   │   │       ├── SearchDialog.tsx
 │   │   │       └── UpcomingFeatures.tsx
 │   │   ├── documents
 │   │   │   ├── editor
@@ -187,6 +188,7 @@
 │   ├── hooks
 │   │   ├── use-media-query.ts
 │   │   ├── use-toast.ts
+│   │   ├── use-waitlist.ts
 │   │   ├── useDocument.ts
 │   │   ├── useDocumentProgress.ts
 │   │   ├── useDownloads.ts
@@ -204,7 +206,8 @@
 │   │   │   ├── notification.ts
 │   │   │   ├── payment.ts
 │   │   │   ├── support.ts
-│   │   │   └── user.ts
+│   │   │   ├── user.ts
+│   │   │   └── waitlist.ts
 │   │   ├── data
 │   │   │   └── locations.ts
 │   │   ├── presets
@@ -235,4 +238,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-54 directories, 182 files
+54 directories, 185 files

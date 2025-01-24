@@ -5,14 +5,17 @@ import {
   RegisterData, 
   UserProfile, 
   UserUpdateData,
-  PasswordChangeData,
   EmailVerificationData,
-  PasswordResetData,
-  DeleteAccountData
+  DeleteAccountData,
+  OTPVerificationData
 } from "@/types/auth";
 import Cookies from 'js-cookie';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Cookie expiration times in days
+const ACCESS_TOKEN_EXPIRY = 4/24; // 4 hours in days (4/24)
+const REFRESH_TOKEN_EXPIRY = 7;   // 7 days
 
 export class AuthError extends Error {
   constructor(public error: { status: number; message: string; code?: string }) {
@@ -111,7 +114,6 @@ export const authApi = {
       if (error instanceof AuthError) {
         throw error;
       }
-      // Handle network errors
       throw new AuthError({
         status: 0,
         message: error.message || 'Network error',
@@ -120,16 +122,37 @@ export const authApi = {
     }
   },
 
-  async register(userData: RegisterData): Promise<UserProfile> {
+  async register(userData: RegisterData): Promise<any> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          email: userData.email,
+          full_name: userData.full_name,
+          company: userData.company,
+        }),
         credentials: 'include'
       });
 
-      return handleResponse<UserProfile>(response);
+      const data = await handleResponse(response);
+      
+      // Set tokens from registration response
+      if (data.tokens) {
+        Cookies.set('accessToken', data.tokens.access_token, {
+          expires: ACCESS_TOKEN_EXPIRY,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production'
+        });
+        
+        Cookies.set('refreshToken', data.tokens.refresh_token, {
+          expires: REFRESH_TOKEN_EXPIRY,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production'
+        });
+      }
+
+      return data;
     } catch (error: any) {
       throw new AuthError({
         status: error.status || 500,
@@ -139,38 +162,105 @@ export const authApi = {
     }
   },
 
-  async login(email: string, password: string): Promise<LoginResponse> {
+  async requestEmailVerificationOTP(data: { email: string }): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-email/request-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: email,
-          password: password
-        }),
+        body: JSON.stringify(data),
         credentials: 'include'
       });
+
+      return handleResponse<void>(response);
+    } catch (error: any) {
+      throw new AuthError({
+        status: error.status || 500,
+        message: error.message || 'Failed to request verification code',
+        code: 'VERIFICATION_REQUEST_ERROR'
+      });
+    }
+  },
+
+  async verifyEmail(data: EmailVerificationData): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      });
+
+      return handleResponse<void>(response);
+    } catch (error: any) {
+      throw new AuthError({
+        status: error.status || 500,
+        message: error.message || 'Email verification failed',
+        code: 'VERIFICATION_ERROR'
+      });
+    }
+  },
+
+  async requestLoginOTP(email: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        credentials: 'include'
+      });
+
+      return handleResponse<void>(response);
+    } catch (error: any) {
+      throw new AuthError({
+        status: error.status || 500,
+        message: error.message || 'Failed to request OTP',
+        code: 'OTP_REQUEST_ERROR'
+      });
+    }
+  },
+
+  async verifyLoginOTP(email: string, otp: string): Promise<LoginResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+        credentials: 'include'
+      });
+
+      // Add specific handling for 403 status
+      if (response.status === 403) {
+        const errorData = await response.json();
+        throw new AuthError({
+          status: 403,
+          message: errorData.detail.message,
+          code: errorData.detail.code
+        });
+      }
 
       const data = await handleResponse<LoginResponse>(response);
       
       Cookies.set('accessToken', data.access_token, { 
-        expires: 1/48, // 30 minutes
+        expires: ACCESS_TOKEN_EXPIRY,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production'
       });
       
       Cookies.set('refreshToken', data.refresh_token, {
-        expires: 7, // 7 days
+        expires: REFRESH_TOKEN_EXPIRY,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production'
       });
 
       return data;
     } catch (error: any) {
+      if (error instanceof AuthError) {
+        throw error;
+      }
       throw new AuthError({
         status: error.status || 500,
         message: error.message || 'Login failed',
-        code: 'LOGIN_ERROR'
+        code: error.code || 'LOGIN_ERROR'
       });
     }
   },
@@ -186,16 +276,6 @@ export const authApi = {
     });
   },
 
-  async changePassword(data: PasswordChangeData): Promise<void> {
-    return this.authenticatedRequest<void>(`${API_BASE_URL}/auth/change-password`, {
-      method: 'POST',
-      body: JSON.stringify({
-        old_password: data.oldPassword,
-        new_password: data.newPassword
-      })
-    });
-  },
-
   async logout(): Promise<void> {
     try {
       await this.authenticatedRequest<void>(`${API_BASE_URL}/auth/logout`, {
@@ -207,50 +287,22 @@ export const authApi = {
     }
   },
 
-  async deleteAccount(data: DeleteAccountData): Promise<void> {
+  async requestDeleteAccountOTP(): Promise<void> {
+    return this.authenticatedRequest<void>(`${API_BASE_URL}/auth/delete-account/request-otp`, {
+      method: 'POST'
+    });
+  },
+
+  async deleteAccount(data: OTPVerificationData): Promise<void> {
     try {
       await this.authenticatedRequest<void>(`${API_BASE_URL}/auth/account`, {
         method: 'DELETE',
-        body: JSON.stringify({ password: data.password })
+        body: JSON.stringify(data)
       });
     } finally {
       Cookies.remove('accessToken');
       Cookies.remove('refreshToken');
     }
-  },
-
-  async verifyEmail(data: EmailVerificationData): Promise<void> {
-    return this.authenticatedRequest<void>(`${API_BASE_URL}/auth/verify-email`, {
-      method: 'POST',
-      body: JSON.stringify({ token: data.token })
-    });
-  },
-
-  async resendVerification(): Promise<void> {
-    return this.authenticatedRequest<void>(`${API_BASE_URL}/auth/resend-verification`, {
-      method: 'POST'
-    });
-  },
-
-  async requestPasswordReset(email: string): Promise<void> {
-    return fetch(`${API_BASE_URL}/auth/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-      credentials: 'include'
-    }).then(handleResponse);
-  },
-
-  async resetPassword(data: PasswordResetData): Promise<void> {
-    return fetch(`${API_BASE_URL}/auth/reset-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token: data.token,
-        new_password: data.newPassword
-      }),
-      credentials: 'include'
-    }).then(handleResponse);
   },
 
   async refreshToken(): Promise<LoginResponse> {
@@ -276,13 +328,13 @@ export const authApi = {
       const data = await handleResponse<LoginResponse>(response);
       
       Cookies.set('accessToken', data.access_token, {
-        expires: 1/48, // 30 minutes
+        expires: ACCESS_TOKEN_EXPIRY, // 4 hours
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production'
       });
       
       Cookies.set('refreshToken', data.refresh_token, {
-        expires: 7, // 7 days
+        expires: REFRESH_TOKEN_EXPIRY, // 7 days
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production'
       });

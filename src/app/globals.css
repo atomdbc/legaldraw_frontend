@@ -5,86 +5,84 @@
 @layer base {
   :root {
     /* Core colors - Black and White theme */
-    --background: 0 0% 100%;          /* Pure white */
-    --foreground: 0 0% 0%;           /* Pure black */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
     
-    --card: 0 0% 100%;               /* White */
-    --card-foreground: 0 0% 0%;      /* Black */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
     
-    --popover: 0 0% 100%;            /* White */
-    --popover-foreground: 0 0% 0%;   /* Black */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
     
     /* Monochromatic primary */
-    --primary: 0 0% 0%;              /* Black */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
     
-    /* Subtle grays for secondary */
-    --secondary: 0 0% 96%;           /* Very light gray */
-    --secondary-foreground: 0 0% 0%; /* Black */
+    /* Refined grays for better hierarchy */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 0%;
     
-    /* Muted grays */
-    --muted: 0 0% 96%;              /* Light gray */
-    --muted-foreground: 0 0% 45%;   /* Medium gray */
+    /* Muted grays with better contrast */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
     
-    /* Accent - keeping it grayscale */
-    --accent: 0 0% 96%;             /* Light gray */
-    --accent-foreground: 0 0% 0%;   /* Black */
+    /* Accent with slight sophistication */
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 0%;
     
-    /* Destructive - keeping black/white with slight red tint */
-    --destructive: 0 84% 60%;       /* Red */
-    --destructive-foreground: 0 0% 100%; /* White */
+    /* Destructive with better accessibility */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
     
-    /* Borders and inputs */
-    --border: 0 0% 89%;            /* Light gray */
-    --input: 0 0% 89%;             /* Light gray */
-    --ring: 0 0% 0%;               /* Black */
-
-    /* Chart colors in grayscale */
-    --chart-1: 0 0% 0%;            /* Black */
-    --chart-2: 0 0% 20%;           /* Dark gray */
-    --chart-3: 0 0% 40%;           /* Medium gray */
-    --chart-4: 0 0% 60%;           /* Light gray */
-    --chart-5: 0 0% 80%;           /* Very light gray */
+    /* Refined borders and inputs */
+    --border: 0 0% 85%;
+    --input: 0 0% 95%;
+    --ring: 0 0% 0%;
+    
+    /* Chart colors with better distinction */
+    --chart-1: 0 0% 0%;
+    --chart-2: 0 0% 25%;
+    --chart-3: 0 0% 45%;
+    --chart-4: 0 0% 65%;
+    --chart-5: 0 0% 85%;
     
     --radius: 0.5rem;
   }
-
+  
   .dark {
-    /* Dark mode - inverted */
-    --background: 0 0% 0%;          /* Black */
-    --foreground: 0 0% 100%;        /* White */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
     
-    --card: 0 0% 0%;               /* Black */
-    --card-foreground: 0 0% 100%;  /* White */
+    --card: 0 0% 2%;
+    --card-foreground: 0 0% 100%;
     
-    --popover: 0 0% 0%;            /* Black */
-    --popover-foreground: 0 0% 100%; /* White */
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 100%;
     
-    --primary: 0 0% 100%;          /* White */
-    --primary-foreground: 0 0% 0%; /* Black */
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
     
-    --secondary: 0 0% 15%;         /* Dark gray */
-    --secondary-foreground: 0 0% 100%; /* White */
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 100%;
     
-    --muted: 0 0% 15%;            /* Dark gray */
-    --muted-foreground: 0 0% 65%; /* Light gray */
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 70%;
     
-    --accent: 0 0% 15%;           /* Dark gray */
-    --accent-foreground: 0 0% 100%; /* White */
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 84% 60%;     /* Red */
-    --destructive-foreground: 0 0% 100%; /* White */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 0 0% 20%;           /* Dark gray */
-    --input: 0 0% 20%;            /* Dark gray */
-    --ring: 0 0% 100%;            /* White */
-
-    /* Chart colors inverted for dark mode */
-    --chart-1: 0 0% 100%;         /* White */
-    --chart-2: 0 0% 80%;          /* Light gray */
-    --chart-3: 0 0% 60%;          /* Medium gray */
-    --chart-4: 0 0% 40%;          /* Dark gray */
-    --chart-5: 0 0% 20%;          /* Very dark gray */
+    --border: 0 0% 18%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 100%;
+    
+    --chart-1: 0 0% 100%;
+    --chart-2: 0 0% 85%;
+    --chart-3: 0 0% 65%;
+    --chart-4: 0 0% 45%;
+    --chart-5: 0 0% 25%;
   }
 }
 
@@ -92,57 +90,141 @@
   * {
     @apply border-border;
   }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Enhanced Form Fields */
+  input, textarea, select {
+    @apply transition-colors duration-200;
+  }
+
+  /* Input Styles */
+  .input {
+    @apply bg-input border border-input rounded-md px-3 py-2
+           focus:outline-none focus:ring-1 focus:ring-ring
+           disabled:opacity-50 disabled:cursor-not-allowed
+           placeholder:text-muted-foreground;
+  }
+
+  /* Label Styles */
+  label {
+    @apply text-sm font-medium text-foreground mb-1.5 block;
   }
 }
 
-/* Component-specific styles */
-.switch[data-state='checked'] {
-  background-color: black;
-  opacity: 1 !important;
+/* Form Component Enhancements */
+@layer components {
+  /* Form Groups with better spacing */
+  .form-group {
+    @apply space-y-4 mb-8;
+  }
+
+  /* Enhanced Select/Dropdown styling */
+  .select-trigger {
+    @apply h-12 px-4 py-2 w-full bg-background hover:bg-accent/50
+           text-base border border-input shadow-sm rounded-md
+           flex items-center justify-between
+           focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .select-content {
+    @apply bg-background border border-input shadow-md rounded-md mt-1
+           p-2 overflow-y-auto max-h-[300px] min-w-[240px];
+  }
+
+  .select-item {
+    @apply relative flex w-full items-center py-3 px-4 rounded-sm text-base
+           hover:bg-accent cursor-default outline-none
+           focus:bg-accent focus:text-accent-foreground
+           data-[disabled]:pointer-events-none data-[disabled]:opacity-50;
+  }
+
+  /* Enhanced Input Fields */
+  .input {
+    @apply h-12 px-4 py-2 text-base bg-background
+           border border-input rounded-md shadow-sm
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Label enhancements */
+  label {
+    @apply text-base font-medium text-foreground mb-2 block;
+  }
+
+  /* Section headers */
+  .section-header {
+    @apply text-lg font-semibold mb-6;
+  }
+
+  /* Form section spacing */
+  .form-section {
+    @apply space-y-6 mb-8;
+  }
+
+  /* Badge enhancements */
+  .badge {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-sm
+           font-medium bg-primary/10 text-primary-foreground;
+  }
+
+  /* Description text */
+  .form-description {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+
+  /* Select item with icon and description */
+  .select-item-content {
+    @apply flex flex-col py-2 px-1;
+  }
+
+  .select-item-header {
+    @apply flex items-center gap-3 mb-1;
+  }
+
+  .select-item-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Error states */
+  .input-error {
+    @apply border-destructive focus:ring-destructive/50;
+  }
+
+  .error-message {
+    @apply text-sm text-destructive mt-1;
+  }
+
+  /* Card enhancements */
+  .form-card {
+    @apply p-8 border border-border rounded-lg bg-card shadow-sm;
+  }
+
+  /* Icon wrapper */
+  .icon-wrapper {
+    @apply flex items-center gap-2 text-muted-foreground;
+  }
 }
 
-.switch[data-state='unchecked'] {
-  background-color: #666666;
-  opacity: 1 !important;
-}
+/* Dark mode refinements */
+.dark {
+  .select-trigger {
+    @apply bg-input border-input/10 hover:bg-accent/20;
+  }
 
-.dark .switch[data-state='checked'] {
-  background-color: white;
-}
+  .select-content {
+    @apply bg-input border-input/20;
+  }
 
-.dark .switch[data-state='unchecked'] {
-  background-color: #999999;
-}
+  .select-item {
+    @apply hover:bg-accent/20 focus:bg-accent/20;
+  }
 
-.tabs-trigger[data-state='active'] {
-  background-color: black;
-  color: white;
-}
-
-.dark .tabs-trigger[data-state='active'] {
-  background-color: white;
-  color: black;
-}
-
-.tabs-content {
-  background-color: white;
-}
-
-.dark .tabs-content {
-  background-color: black;
-}
-
-.button {
-  opacity: 1 !important;
-}
-
-.input {
-  border: 1px solid var(--border);
-}
-
-.input:focus {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 1px var(--ring);
+  .form-card {
+    @apply bg-card border-border/20;
+  }
 }

@@ -2,30 +2,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Search, Menu, Home, ArrowLeft } from 'lucide-react';
+
+// Components
 import { DocNavigation } from '@/components/documentation/DocNavigation';
+import { SearchDialog } from '@/components/documentation/sections/SearchDialog';
 import { IntroductionSection } from '@/components/documentation/sections/Introduction';
 import { QuickStartSection } from '@/components/documentation/sections/QuickStart';
 import { DocumentCreationSection } from '@/components/documentation/sections/DocumentCreation';
 import { PartyManagementSection } from '@/components/documentation/sections/PartyManagement';
 import { AIFeaturesSection } from '@/components/documentation/sections/AIFeatures';
 import { UpcomingFeaturesSection } from '@/components/documentation/sections/UpcomingFeatures';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Menu, Home } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from "@/components/ui/command";
 
 const sections = {
   'introduction': {
@@ -61,6 +51,7 @@ const sections = {
 };
 
 export default function DocumentationPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState('introduction');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -68,34 +59,43 @@ export default function DocumentationPage() {
   const [searchResults, setSearchResults] = useState<Array<{section: string, title: string}>>([]);
 
   useEffect(() => {
-    const section = searchParams.get('section');
+    const section = searchParams?.get('section');
     if (section && sections[section]) {
       setActiveSection(section);
     }
   }, [searchParams]);
 
-  const ActiveSection = sections[activeSection]?.component || sections.introduction.component;
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
   const handleNavigation = (section: string) => {
     setActiveSection(section);
     setMobileOpen(false);
-    const url = new URL(window.location.href);
-    url.searchParams.set('section', section);
-    window.history.pushState({}, '', url);
+    router.push(`/documentation?section=${section}`);
   };
 
   const handleSearch = (query: string) => {
-    if (!query) {
+    if (!query || query.length < 2) {
       setSearchResults([]);
       return;
     }
 
     const results = Object.entries(sections)
       .filter(([key, section]) => {
-        const searchTerms = [...section.keywords, section.title.toLowerCase()];
-        return searchTerms.some(term => 
-          term.toLowerCase().includes(query.toLowerCase())
-        );
+        const searchText = [
+          section.title.toLowerCase(),
+          ...(section.keywords || []).map(k => k.toLowerCase())
+        ].join(' ');
+        return searchText.includes(query.toLowerCase());
       })
       .map(([key, section]) => ({
         section: key,
@@ -105,9 +105,11 @@ export default function DocumentationPage() {
     setSearchResults(results);
   };
 
+  const ActiveSection = sections[activeSection]?.component || sections.introduction.component;
+
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile Navigation Trigger */}
+      {/* Mobile Navigation */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetTrigger asChild>
           <Button
@@ -136,10 +138,10 @@ export default function DocumentationPage() {
 
       {/* Main Content */}
       <div className="flex-1 min-w-0">
-        {/* Search Header */}
+        {/* Header */}
         <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between px-4">
-            {/* Left side: Breadcrumb */}
+            {/* Left: Breadcrumb */}
             <nav className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 
@@ -156,7 +158,7 @@ export default function DocumentationPage() {
               </div>
             </nav>
 
-            {/* Right side: Search */}
+            {/* Right: Search & Dashboard */}
             <div className="flex items-center gap-4">
               <Button
                 variant="outline"
@@ -167,36 +169,28 @@ export default function DocumentationPage() {
                 <span>Search docs...</span>
                 <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
               </Button>
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard')}
+                className="hidden md:flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Dashboard
+              </Button>
             </div>
           </div>
         </header>
 
         {/* Search Dialog */}
-        <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
-          <CommandInput 
-            placeholder="Search documentation..."
-            onValueChange={handleSearch}
-          />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Results">
-              {searchResults.map((result) => (
-                <CommandItem
-                  key={result.section}
-                  onSelect={() => {
-                    handleNavigation(result.section);
-                    setSearchOpen(false);
-                  }}
-                >
-                  <Search className="mr-2 h-4 w-4" />
-                  {result.title}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </CommandDialog>
+        <SearchDialog 
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          searchResults={searchResults}
+          onSearch={handleSearch}
+          onSelect={handleNavigation}
+        />
 
-        {/* Content Area */}
+        {/* Content */}
         <main className="container py-6">
           <div className="mx-auto max-w-4xl">
             <ActiveSection />

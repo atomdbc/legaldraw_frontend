@@ -130,10 +130,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">Create your account</h2>
-            <p className="text-zinc-500">Get started with LegalDraw AI today</p>
-          </div>
+ 
 
           <RegisterForm />
 

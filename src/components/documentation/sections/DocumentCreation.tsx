@@ -18,6 +18,7 @@ import { DocContent, DocHeading, DocNote, DocCode } from '../DocContent';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useRouter } from 'next/navigation';
 
 // Example document types data
 const documentTypes = [
@@ -46,6 +47,7 @@ const documentTypes = [
 ];
 
 export function DocumentCreationSection() {
+    const router = useRouter();
   return (
     <DocContent>
       <div className="space-y-8">
@@ -290,9 +292,13 @@ export function DocumentCreationSection() {
 
         {/* Next Steps */}
         <div className="mt-8">
-          <Button className="w-full sm:w-auto">
+          <Button 
+            size="lg" 
+            className="mt-8 gap-2"
+            onClick={() => router.push('/documents/create')}
+          >
             Start Creating Documents
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
       </div>

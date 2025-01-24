@@ -87,7 +87,7 @@ export function QuickStats({
              </Badge>
            </div>
            <div className="space-y-2 text-sm text-zinc-600 mb-4">
-             <p>• {`${userPlan?.plan.monthly_generations || 1} document generations`}</p>
+             <p>• {`${userPlan?.plan.monthly_generations ?? 0} document generations`}</p>
              <p>• {`${userPlan?.plan.edit_versions_allowed || 0} revisions per document`}</p>
              <p>• {userPlan?.plan.download_limit === -1 ? 'Unlimited downloads' : `${userPlan?.plan.download_limit} downloads`}</p>
            </div>

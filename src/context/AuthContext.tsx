@@ -11,21 +11,21 @@ interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, full_name: string, company?: string, role?: string) => Promise<void>;
+  requestLoginOTP: (email: string) => Promise<any>;
+  verifyLoginOTP: (email: string, otp: string) => Promise<void>;
+  register: (email: string, full_name: string, company?: string, role?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: UserUpdateData) => Promise<void>;
-  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
-  deleteAccount: (password: string) => Promise<void>;
-  verifyEmail: (token: string) => Promise<void>;
-  resendVerification: () => Promise<void>;
-  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  requestEmailVerificationOTP: () => Promise<void>;
+  verifyEmail: (email: string, otp: string) => Promise<void>;
+  requestDeleteAccountOTP: () => Promise<void>;
+  deleteAccount: (email: string, otp: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PUBLIC_PATHS = ['/login', '/register', '/reset-password', '/verify-email'];
+const PUBLIC_PATHS = ['/login', '/register'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -79,20 +79,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, [isPublicPath]);
 
-  const login = async (email: string, password: string) => {
+  const requestLoginOTP = async (email: string) => {
     try {
       setIsLoading(true);
-      await authApi.login(email, password);
+      const response = await authApi.requestLoginOTP(email);
+      return response;
+    } catch (error) {
+      console.error('Login OTP request failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyLoginOTP = async (email: string, otp: string) => {
+    try {
+      setIsLoading(true);
+      await authApi.verifyLoginOTP(email, otp);
       
-      // Small delay to ensure cookies are set
       await new Promise(resolve => setTimeout(resolve, 100));
       
       await refreshUser();
       router.push('/dashboard');
     } catch (error) {
-      console.error('Login failed:', error);
-      Cookies.remove('accessToken');
-      Cookies.remove('refreshToken');
+      console.error('Login verification error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -101,21 +111,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (
     email: string,
-    password: string,
     full_name: string,
     company?: string,
     role?: string
   ) => {
     try {
       setIsLoading(true);
-      await authApi.register({
+      
+      // Register and get response with tokens
+      const response = await authApi.register({
         email,
-        password,
         full_name,
         company,
         role
       });
-      await login(email, password);
+  
+      // Set user from registration response
+      if (response.user) {
+        setUser(response.user);
+      }
+      
+      // OTP is already sent during registration, no need to request again
+      return;
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
@@ -123,6 +140,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   };
+
+  const verifyEmail = async (email: string, otp: string) => {
+    try {
+      setIsLoading(true);
+      await authApi.verifyEmail({ email, otp });
+      // After verification, log the user in
+      await authApi.verifyLoginOTP(email, otp);
+      await refreshUser();
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Email verification failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const logout = async () => {
     try {
@@ -151,63 +185,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const changePassword = async (oldPassword: string, newPassword: string) => {
+  const requestEmailVerificationOTP = async () => {
     try {
       setIsLoading(true);
-      await authApi.changePassword(oldPassword, newPassword);
+      await authApi.requestEmailVerificationOTP();
     } catch (error) {
-      console.error('Password change failed:', error);
+      console.error('Email verification OTP request failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const deleteAccount = async (password: string) => {
+
+
+  const requestDeleteAccountOTP = async () => {
     try {
       setIsLoading(true);
-      await authApi.deleteAccount(password);
+      await authApi.requestDeleteAccountOTP();
+    } catch (error) {
+      console.error('Delete account OTP request failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteAccount = async (email: string, otp: string) => {
+    try {
+      setIsLoading(true);
+      await authApi.deleteAccount({ email, otp });
       setUser(null);
       router.push('/login');
     } catch (error) {
       console.error('Account deletion failed:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const verifyEmail = async (token: string) => {
-    try {
-      setIsLoading(true);
-      await authApi.verifyEmail(token);
-      await refreshUser();
-    } catch (error) {
-      console.error('Email verification failed:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resendVerification = async () => {
-    try {
-      setIsLoading(true);
-      await authApi.resendVerification();
-    } catch (error) {
-      console.error('Verification email resend failed:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetPassword = async (token: string, newPassword: string) => {
-    try {
-      setIsLoading(true);
-      await authApi.resetPassword(token, newPassword);
-    } catch (error) {
-      console.error('Password reset failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -233,15 +244,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     isLoading,
     isAuthenticated: !!user,
-    login,
+    requestLoginOTP,
+    verifyLoginOTP,
     register,
     logout,
     updateProfile,
-    changePassword,
-    deleteAccount,
+    requestEmailVerificationOTP,
     verifyEmail,
-    resendVerification,
-    resetPassword,
+    requestDeleteAccountOTP,
+    deleteAccount,
     refreshUser
   };
 
