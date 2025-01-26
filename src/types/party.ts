@@ -90,9 +90,11 @@ export const INITIAL_PARTY: Party = {
     city: '',
     state: '',
     zipCode: '',
-    country: 'USA',
+    country: '', 
   },
 };
+
+
 
 // Validation types
 export interface ValidationError {
@@ -111,6 +113,17 @@ export interface PartyFormData extends Partial<Party> {
 
 // Utility functions to convert between frontend and backend formats
 export const partyUtils = {
+  updateParty(party: Party, updates: Partial<Party>): Party {
+    return {
+      ...party,
+      ...updates,
+      address: {
+        ...party.address,
+        ...(updates.address || {}),
+      },
+      jurisdiction: updates.jurisdiction || party.jurisdiction // Explicitly handle jurisdiction
+    };
+  },
   toBackendFormat(party: Party): PartyBackend {
     return {
       name: party.name,

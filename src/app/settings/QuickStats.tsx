@@ -150,17 +150,20 @@ export function QuickStats({
 }
 
 function getPlanDisplayName(name: string) {
- switch (name.toLowerCase()) {
-   case 'per_document':
-     return 'Pay Per Document';
-   case 'professional':
-     return 'Professional Plan';
-   case 'basic':
-     return 'Basic Plan';
-   default:
-     return 'Free Plan';
+  switch (name.toLowerCase()) {
+    case 'per document':
+    case 'pay per document': 
+      return 'Pay Per Document';
+    case 'professional':
+      return 'Professional';
+    case 'basic':
+      return 'Basic';
+    case 'enterprise':
+      return 'Enterprise';
+    default:
+      return 'Free';
+  }
  }
-}
 
 function QuickStatsLoading() {
  return (

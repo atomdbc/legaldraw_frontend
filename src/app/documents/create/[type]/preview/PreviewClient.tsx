@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -7,7 +8,7 @@ import { useDocument } from '@/hooks/useDocument';
 import { usePayment } from '@/hooks/usePayment';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Download, ChevronLeft } from 'lucide-react';
+import { AlertCircle, Download, ChevronLeft, Edit, FileText } from 'lucide-react';
 import { PlanType, Currency, BillingCycle } from '@/types/enums';
 import type { PaymentCreateRequest } from '@/types/payment';
 
@@ -27,6 +28,7 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showSmartTemplateInfo, setShowSmartTemplateInfo] = useState(true);
 
   // Payment handler
   const handlePerDocumentPayment = async () => {
@@ -180,6 +182,12 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
     }
   };
 
+  const handleEdit = () => {
+    if (documentId) {
+      router.push(`/documents/${documentId}`);
+    }
+  };
+
   // Thumbnail component
   const Thumbnail = ({ pageNum }: { pageNum: number }) => (
     <button
@@ -200,6 +208,43 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Smart Template Notice */}
+      {showSmartTemplateInfo && (
+        <div className="bg-primary/5 border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-primary">Smart Template Generated</p>
+                  <p className="text-sm text-muted-foreground">
+                    This document adapts to your needs. Review and customize before downloading.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleEdit}
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Template
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowSmartTemplateInfo(false)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment Alert */}
       {downloadError && (
         <div className="fixed inset-x-0 top-0 z-50">
@@ -252,15 +297,27 @@ export function PreviewClient({ documentType, documentId }: PreviewClientProps) 
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+              <div className="h-4 w-px bg-border" />
+              <Button
+                variant="link"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground gap-2"
+                onClick={handleEdit}
+              >
+                <Edit className="h-4 w-4" />
+                Edit Document
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 

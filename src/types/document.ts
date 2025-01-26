@@ -1,6 +1,6 @@
 // src/types/document.ts
 
-// src/types/document.ts
+import { Jurisdiction, JURISDICTIONS } from '@/lib/config/jurisdictions';
 
 export interface AddressBase {
   street: string;
@@ -24,15 +24,31 @@ export interface NDAVariables {
 export interface ServiceVariables {
   service_description: string;
   service_scope: string;
-  service_category: string;  // Add this
+  service_category: string;
   payment_terms: string;
   delivery_timeline: string;
   termination_notice: string;
   service_level: string;
-  term_duration: string;    // Add this
+  term_duration: string;
   governing_law: string;
   effective_date: string;
 }
+
+export interface EmploymentVariables {
+  employee_name: string;
+  position_title: string;
+  base_salary: string;
+  employment_type: string;
+  start_date: string;
+  work_location: string;
+  working_hours: string;
+  vacation_days: string;
+  notice_period: string;
+  governing_law: string;
+}
+
+export type DocumentVariables = NDAVariables | ServiceVariables | EmploymentVariables;
+
 export interface DocumentDraftStatus {
   version: number;
   has_unsaved_changes: boolean;
@@ -47,26 +63,59 @@ export interface DocumentDraftResponse {
   last_edited: string;
 }
 
-export type DocumentVariables = NDAVariables | ServiceVariables;
-
-// Document field configuration types
-export interface DocumentField {
+export interface BaseDocumentField {
   id: string;
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'date';
   description: string;
   required: boolean;
   placeholder?: string;
-  options?: string[];
   aiAssisted?: boolean;
 }
+
+export interface TextDocumentField extends BaseDocumentField {
+  type: 'text';
+}
+
+export interface TextareaDocumentField extends BaseDocumentField {
+  type: 'textarea';
+}
+
+export interface SelectDocumentField extends BaseDocumentField {
+  type: 'select';
+  options: string[];
+}
+
+export interface DateDocumentField extends BaseDocumentField {
+  type: 'date';
+}
+
+export interface JurisdictionField extends BaseDocumentField {
+  type: 'jurisdiction';
+  allowCustomInput?: boolean;
+}
+
+export type DocumentField = 
+  | TextDocumentField 
+  | TextareaDocumentField 
+  | SelectDocumentField 
+  | DateDocumentField 
+  | JurisdictionField;
 
 export interface DocumentFieldsConfig {
   [key: string]: DocumentField[];
 }
 
-// Predefined document field configurations
+const governingLawField: JurisdictionField = {
+  id: 'governing_law',
+  key: 'governing_law',
+  label: 'Governing Law',
+  type: 'jurisdiction',
+  description: 'Which jurisdiction\'s laws will govern this agreement?',
+  required: true,
+  allowCustomInput: true
+};
+
 export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
   nda: [
     {
@@ -78,7 +127,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
       required: true,
       placeholder: 'e.g., For the purpose of evaluating potential business opportunities...',
       aiAssisted: true
-    },
+    } as TextareaDocumentField,
     {
       id: 'confidential_info_types',
       key: 'confidential_info_types',
@@ -93,7 +142,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Marketing plans, customer lists, and pricing information'
       ],
       aiAssisted: true
-    },
+    } as SelectDocumentField,
     {
       id: 'industry_type',
       key: 'industry_type',
@@ -108,7 +157,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Manufacturing and Engineering',
         'Professional Services'
       ]
-    },
+    } as SelectDocumentField,
     {
       id: 'protection_requirements',
       key: 'protection_requirements',
@@ -123,7 +172,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Data masking and secure transmission protocols'
       ],
       aiAssisted: true
-    },
+    } as SelectDocumentField,
     {
       id: 'permitted_uses',
       key: 'permitted_uses',
@@ -138,7 +187,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Due diligence and business analysis'
       ],
       aiAssisted: true
-    },
+    } as SelectDocumentField,
     {
       id: 'duration',
       key: 'duration',
@@ -153,21 +202,8 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'five (5) years',
         'indefinite'
       ]
-    },
-    {
-      id: 'governing_law',
-      key: 'governing_law',
-      label: 'Governing Law',
-      type: 'select',
-      description: 'Which jurisdiction\'s laws will govern this agreement?',
-      required: true,
-      options: [
-        'State of Delaware',
-        'State of California',
-        'State of New York',
-        'State of Texas'
-      ]
-    },
+    } as SelectDocumentField,
+    governingLawField,
     {
       id: 'effective_date',
       key: 'effective_date',
@@ -175,7 +211,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
       type: 'date',
       description: 'When does this agreement take effect?',
       required: true
-    }
+    } as DateDocumentField
   ],
   service: [
     {
@@ -187,7 +223,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
       required: true,
       placeholder: 'e.g., Development of custom software application...',
       aiAssisted: true
-    },
+    } as TextareaDocumentField,
     {
       id: 'service_scope',
       key: 'service_scope',
@@ -201,7 +237,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Ongoing maintenance and support',
         'Consultation and advisory services'
       ]
-    },
+    } as SelectDocumentField,
     {
       id: 'payment_terms',
       key: 'payment_terms',
@@ -215,7 +251,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Hourly rate billing',
         'Fixed project fee'
       ]
-    },
+    } as SelectDocumentField,
     {
       id: 'delivery_timeline',
       key: 'delivery_timeline',
@@ -229,7 +265,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Phased delivery',
         'Monthly deliverables'
       ]
-    },
+    } as SelectDocumentField,
     {
       id: 'termination_notice',
       key: 'termination_notice',
@@ -243,7 +279,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         '90 days notice',
         'Immediate upon breach'
       ]
-    },
+    } as SelectDocumentField,
     {
       id: 'service_level',
       key: 'service_level',
@@ -257,21 +293,8 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'Enterprise level',
         'Basic support'
       ]
-    },
-    {
-      id: 'governing_law',
-      key: 'governing_law',
-      label: 'Governing Law',
-      type: 'select',
-      description: 'Which jurisdiction\'s laws will govern this agreement?',
-      required: true,
-      options: [
-        'State of Delaware',
-        'State of California',
-        'State of New York',
-        'State of Texas'
-      ]
-    },
+    } as SelectDocumentField,
+    governingLawField,
     {
       id: 'effective_date',
       key: 'effective_date',
@@ -279,7 +302,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
       type: 'date',
       description: 'When does this agreement take effect?',
       required: true
-    },
+    } as DateDocumentField,
     {
       id: 'service_category',
       key: 'service_category',
@@ -295,7 +318,7 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'training',
         'managed services'
       ]
-    },
+    } as SelectDocumentField,
     {
       id: 'term_duration',
       key: 'term_duration',
@@ -309,11 +332,103 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
         'three (3) years',
         'five (5) years'
       ]
+    } as SelectDocumentField,
+  ],
+  employment_agreement: [
+    {
+      id: 'employee_name',
+      key: 'employee_name',
+      label: 'Employee Name',
+      type: 'text',
+      description: 'Full legal name of the employee',
+      required: true,
+      placeholder: 'e.g., John Doe'
     },
+    {
+      id: 'position_title',
+      key: 'position_title',
+      label: 'Position Title',
+      type: 'text',
+      description: 'Job title for the position',
+      required: true,
+      placeholder: 'e.g., Software Engineer'
+    },
+    {
+      id: 'base_salary',
+      key: 'base_salary',
+      label: 'Base Salary',
+      type: 'text',
+      description: 'Annual base salary',
+      required: true,
+      placeholder: 'e.g., $75,000'
+    },
+    {
+      id: 'work_location',
+      key: 'work_location',
+      label: 'Work Location',
+      type: 'text',
+      description: 'Primary work location',
+      required: true,
+      placeholder: 'e.g., New York Office'
+    },
+    {
+      id: 'working_hours',
+      key: 'working_hours',
+      label: 'Working Hours',
+      type: 'text',
+      description: 'Standard working hours',
+      required: true,
+      placeholder: 'e.g., 40 hours per week, 9 AM to 5 PM'
+    },
+    {
+      id: 'vacation_days',
+      key: 'vacation_days',
+      label: 'Vacation Days',
+      type: 'text',
+      description: 'Annual vacation days',
+      required: true,
+      placeholder: 'e.g., 15 days per year'
+    },
+    {
+      id: 'employment_type',
+      key: 'employment_type',
+      label: 'Employment Type',
+      type: 'select',
+      description: 'Type of employment',
+      required: true,
+      options: [
+        'Full-time',
+        'Part-time',
+        'Contract',
+        'Temporary'
+      ]
+    },
+    {
+      id: 'notice_period',
+      key: 'notice_period',
+      label: 'Notice Period',
+      type: 'select',
+      description: 'Required notice period for termination',
+      required: true,
+      options: [
+        'Two weeks',
+        'One month',
+        'Three months',
+        'Immediate'
+      ]
+    },
+    {
+      id: 'governing_law',
+      key: 'governing_law',
+      label: 'Governing Law',
+      type: 'jurisdiction',
+      description: 'Which jurisdiction\'s laws will govern this agreement?',
+      required: true,
+      allowCustomInput: true
+    }
   ]
 };
 
-// Predefined values for quick fill
 export const PREDEFINED_VALUES = {
   nda: {
     purpose: 'For the purpose of evaluating potential business opportunities and discussing possible collaboration.',
@@ -322,59 +437,31 @@ export const PREDEFINED_VALUES = {
     protection_requirements: 'Encryption, secure storage, and access logging',
     permitted_uses: 'Evaluation and development of joint project',
     duration: 'one (1) year',
-    governing_law: 'State of Delaware',
+    governing_law: 'us_delaware',
     effective_date: new Date().toISOString()
   },
   service: {
     service_description: 'Development and implementation of custom software solutions',
     service_scope: 'Full service implementation and support',
-    service_category: 'development',  // Add this
+    service_category: 'development',
     payment_terms: 'Monthly retainer',
     delivery_timeline: 'Phased delivery',
     termination_notice: '30 days notice',
     service_level: 'Standard service level',
-    term_duration: 'one (1) year',   // Add this
-    governing_law: 'State of Delaware',
+    term_duration: 'one (1) year',
+    governing_law: 'us_delaware',
     effective_date: new Date().toISOString()
+  },
+  employment_agreement: {
+    position_title: 'Software Engineer',
+    employment_type: 'Full-time',
+    start_date: new Date().toISOString(),
+    compensation: '$75,000 per year',
+    benefits: 'Health insurance, 401(k), PTO...',
+    termination_notice: 'Two weeks',
+    governing_law: 'us_delaware'
   }
 } as const;
-
-// Type guards
-export function isNDAVariables(variables: any): variables is NDAVariables {
-  const requiredFields = [
-    'purpose',
-    'confidential_info_types',
-    'industry_type',
-    'protection_requirements',
-    'permitted_uses',
-    'duration',
-    'governing_law',
-    'effective_date'
-  ];
-
-  return (
-    typeof variables === 'object' &&
-    requiredFields.every(field => field in variables)
-  );
-}
-
-export function isServiceVariables(variables: any): variables is ServiceVariables {
-  const requiredFields = [
-    'service_description',
-    'service_scope',
-    'payment_terms',
-    'delivery_timeline',
-    'termination_notice',
-    'service_level',
-    'governing_law',
-    'effective_date'
-  ];
-
-  return (
-    typeof variables === 'object' &&
-    requiredFields.every(field => field in variables)
-  );
-}
 
 export enum DocumentType {
   NDA = 'NDA',
@@ -382,8 +469,6 @@ export enum DocumentType {
   EMPLOYMENT_AGREEMENT = 'EMPLOYMENT_AGREEMENT',
   SOFTWARE_LICENSE = 'SOFTWARE_LICENSE'
 }
-
-
 
 export interface Party {
   id?: string;
@@ -446,17 +531,17 @@ export interface DocumentStats {
     count: number;
   }[];
 }
+
 export interface PublishDraftRequest {
-  new_document_id: string;   // UUID for new published version
-  content: string;          // HTML content
-  status: string;          // Status - default "COMPLETED"
+  new_document_id: string;
+  content: string;
+  status: string;
   document_metadata: {
-    published_at: string;      // ISO string
-    published_by: string;      // user_id
-    original_document_id: string;  // base document id
+    published_at: string;
+    published_by: string;
+    original_document_id: string;
   }
 }
-
 
 export interface DocumentHistory {
   document_id: string;
@@ -485,21 +570,21 @@ export interface GenerateDocumentRequest {
   variables: Partial<DocumentVariables>;
   effective_date?: string;
   settings: {
-      cover_page: {
-          enabled: boolean;
-          watermark: string;
-          logo_enabled: boolean;
-      };
-      header_footer: {
-          enabled: boolean;
-          header_text: string;
-          footer_text: string;
-      };
-      styling: {
-          font_family: string;
-          primary_color: string;
-          secondary_color: string;
-      };
+    cover_page: {
+      enabled: boolean;
+      watermark: string;
+      logo_enabled: boolean;
+    };
+    header_footer: {
+      enabled: boolean;
+      header_text: string;
+      footer_text: string;
+    };
+    styling: {
+      font_family: string;
+      primary_color: string;
+      secondary_color: string;
+    };
   };
 }
 
@@ -531,7 +616,7 @@ export interface AddressBackend {
   street: string;
   city: string;
   state: string;
-  zip_code: string;  // Changed to match backend
+  zip_code: string;
   country: string;
 }
 
@@ -542,16 +627,16 @@ export interface DocumentSettings {
 
 export interface CoverPageSettings {
   enabled: boolean;
-  title?: string;  
+  title?: string;
   subtitle?: string;
 }
 
 export interface WatermarkSettings {
   enabled: boolean;
-  text: string;     
-  opacity?: number; 
-  color?: string;   
-  angle?: number;   
+  text: string;
+  opacity?: number;
+  color?: string;
+  angle?: number;
 }
 
 export enum DocumentStatus {
@@ -561,7 +646,6 @@ export enum DocumentStatus {
   COMPLETED = 'COMPLETED'
 }
 
-// Utility object for document type operations
 export const documentTypeUtils = {
   toDisplayName(type: DocumentType): string {
     return type.toLowerCase()
@@ -587,7 +671,6 @@ export const documentTypeUtils = {
   }
 };
 
-// Document progress types
 export interface DocumentProgressData {
   parties?: Party[];
   variables?: Record<string, any>;
@@ -601,7 +684,6 @@ export interface DocumentProgress {
   lastUpdated: string;
 }
 
-// Document template types
 export interface DocumentTemplate {
   id: string;
   name: string;
@@ -627,4 +709,3 @@ export interface DocumentVariable {
     options?: string[];
   };
 }
-

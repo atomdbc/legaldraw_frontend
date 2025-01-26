@@ -4,16 +4,21 @@ import { useEffect, useState } from 'react';
 import { Party, PartyType, PARTY_TYPES, ValidationErrors } from "@/types/party";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertCircle, Trash2, Mail, MapPin, Phone, Building2 } from "lucide-react";
-import { locationService } from '@/lib/api/locationService';
-import { isValidEmail, formatPhone, isValidPhone } from "@/lib/utils/form";
-import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLocation } from '@/hooks/useLocation';
+import { cn } from "@/lib/utils";
+import { isValidEmail, formatPhone, isValidPhone } from "@/lib/utils/form";
+import { JURISDICTION_GROUPS } from '@/lib/config/jurisdictions';
+import { 
+  getJurisdictionById, 
+  createCustomJurisdiction 
+} from '@/lib/config/jurisdictions';
 
 interface PartyDetailsFormProps {
   party: Party;
@@ -23,15 +28,6 @@ interface PartyDetailsFormProps {
   errors: ValidationErrors;
 }
 
-interface GeoLocation {
-  geonameId: string;
-  toponymName: string;
-  countryCode: string;
-  countryName?: string;
-  adminCode1?: string;
-  adminName1?: string;
-}
-
 export function PartyDetailsForm({
   party,
   onUpdate,
@@ -39,58 +35,64 @@ export function PartyDetailsForm({
   canRemove,
   errors
 }: PartyDetailsFormProps) {
-  const [countries, setCountries] = useState<GeoLocation[]>([]);
-  const [states, setStates] = useState<GeoLocation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [selectedGeonameId, setSelectedGeonameId] = useState<number | null>(null);
+  // Load the country immediately if it exists in party.address
+  const currentCountry = party.address?.country;
+  const currentState = party.address?.state;
+  const [showCustomJurisdiction, setShowCustomJurisdiction] = useState(false);
+const [customJurisdiction, setCustomJurisdiction] = useState('');
 
-  // Load states when selectedGeonameId changes
-  useEffect(() => {
-    async function loadStates() {
-      if (selectedGeonameId) {
-        setLoadingStates(true);
-        try {
-          console.log('Fetching states for geonameId:', selectedGeonameId); // Debug
-          const data = await locationService.getStatesForCountry(String(selectedGeonameId));
-          setStates(data);
-        } catch (error) {
-          console.error('Error loading states:', error);
-          setStates([]);
-        } finally {
-          setLoadingStates(false);
-        }
-      } else {
-        setStates([]);
-      }
-    }
-    loadStates();
-  }, [selectedGeonameId]);
-  
-  useEffect(() => {
-    async function loadCountries() {
-      try {
-        const data = await locationService.getAllCountries();
-        setCountries(data);
-      } catch (error) {
-        console.error('Error loading countries:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadCountries();
-  }, []);
+  const {
+    locationState,
+    updateLocation,
+    countries,
+    states,
+    isLoadingCountries,
+    isLoadingStates
+  } = useLocation({
+    persistKey: party.id,
+    initialCountry: currentCountry,
+    initialState: currentState
+  });
 
-  // Load states when country changes
-
-
+  // Update address helper
   const updateAddress = (updates: Partial<Party['address']>) => {
     onUpdate({
       address: { ...party.address, ...updates }
     });
   };
 
-  if (loading) {
+  // This effect ensures states are loaded when we have a country but no states
+  useEffect(() => {
+    async function loadStatesForCurrentCountry() {
+      if (currentCountry && countries.length > 0) {
+        const country = countries.find(c => c.countryName === currentCountry);
+        if (country && country.geonameId) {
+          // Update location with the country's geonameId to trigger state loading
+          await updateLocation({
+            country: country.countryName,
+            geonameId: String(country.geonameId)
+          });
+        }
+      }
+    }
+
+    // Load states if we have a country but states are empty
+    if (currentCountry && states.length === 0 && !isLoadingStates) {
+      loadStatesForCurrentCountry();
+    }
+  }, [currentCountry, countries, states.length, isLoadingStates]);
+
+  // Load saved location on mount
+  useEffect(() => {
+    if (locationState.country && !party.address?.country) {
+      updateAddress({ country: locationState.country });
+    }
+    if (locationState.state && !party.address?.state) {
+      updateAddress({ state: locationState.state });
+    }
+  }, [locationState]);
+
+  if (isLoadingCountries) {
     return <LoadingSkeleton />;
   }
 
@@ -239,6 +241,102 @@ export function PartyDetailsForm({
                 )}
               </div>
 
+              {/* Jurisdiction */}
+<div className="grid gap-2">
+  <Label className="flex items-center gap-2">
+    Jurisdiction
+    {errors.jurisdiction && (
+      <span className="text-sm text-destructive">{errors.jurisdiction}</span>
+    )}
+  </Label>
+  {showCustomJurisdiction ? (
+    <div className="flex gap-2">
+      <Input
+        value={customJurisdiction}
+        onChange={(e) => setCustomJurisdiction(e.target.value)}
+        placeholder="Enter jurisdiction name"
+        className={cn(errors.jurisdiction && "border-destructive")}
+      />
+      <Button onClick={() => {
+        if (customJurisdiction.trim()) {
+          const jurisdiction = createCustomJurisdiction(customJurisdiction);
+          onUpdate({ jurisdiction: jurisdiction.id });
+          setShowCustomJurisdiction(false);
+          setCustomJurisdiction('');
+        }
+      }}>
+        Add
+      </Button>
+      <Button variant="outline" onClick={() => setShowCustomJurisdiction(false)}>
+        Cancel
+      </Button>
+    </div>
+  ) : (
+    <Select
+      value={party.jurisdiction || ''}
+      onValueChange={(value) => {
+        if (value === 'custom') {
+          setShowCustomJurisdiction(true);
+        } else {
+          onUpdate({ jurisdiction: value });
+        }
+      }}
+    >
+      <SelectTrigger className="h-[42px]">
+        <SelectValue placeholder="Select jurisdiction">
+          {party.jurisdiction ? getJurisdictionById(party.jurisdiction)?.label || party.jurisdiction : "Select jurisdiction"}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectLabel>Popular Jurisdictions</SelectLabel>
+          {JURISDICTION_GROUPS.popular.map(id => {
+            const jurisdiction = getJurisdictionById(id);
+            return jurisdiction && (
+              <SelectItem key={id} value={id}>
+                {jurisdiction.label}
+              </SelectItem>
+            );
+          })}
+        </SelectGroup>
+        
+        <SelectSeparator />
+        
+        <SelectGroup>
+          <SelectLabel>International</SelectLabel>
+          {JURISDICTION_GROUPS.international.map(id => {
+            const jurisdiction = getJurisdictionById(id);
+            return jurisdiction && (
+              <SelectItem key={id} value={id}>
+                {jurisdiction.label}
+              </SelectItem>
+            );
+          })}
+        </SelectGroup>
+
+        {Object.entries(JURISDICTION_GROUPS)
+          .filter(([group]) => !['popular', 'international'].includes(group))
+          .map(([group, ids]) => (
+            <SelectGroup key={group}>
+              <SelectLabel>{group.replace(/([A-Z])/g, ' $1').trim()}</SelectLabel>
+              {ids.map(id => {
+                const jurisdiction = getJurisdictionById(id);
+                return jurisdiction && (
+                  <SelectItem key={id} value={id}>
+                    {jurisdiction.label}
+                  </SelectItem>
+                );
+              })}
+            </SelectGroup>
+          ))}
+
+        <SelectSeparator />
+        <SelectItem value="custom">+ Add Custom Jurisdiction</SelectItem>
+      </SelectContent>
+    </Select>
+  )}
+</div>
+
               {/* Phone */}
               <div className="grid gap-2">
                 <Label className="flex items-center gap-2">
@@ -266,80 +364,73 @@ export function PartyDetailsForm({
                 <h4 className="font-medium text-foreground">Address</h4>
               </div>
 
-            {/* Country Selection */}
-<div className="grid gap-2">
-  <Label>Country</Label>
-  <Select
-    value={party.address.country}
-    onValueChange={(value) => {
-      // Find the selected country
-      const selectedCountry = countries.find(c => c.countryName === value);
-      console.log('Selected country:', selectedCountry); // Debug
-      if (selectedCountry) {
-        // Use the full country name
-        updateAddress({ 
-          country: selectedCountry.countryName // Use full name instead of code
-        });
-        // Store geonameId for state lookup
-        setSelectedGeonameId(selectedCountry.geonameId);
-      }
-    }}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="Select country" />
-    </SelectTrigger>
-    <SelectContent>
-      {countries.map((country) => (
-        <SelectItem 
-          key={country.geonameId} 
-          value={country.countryName}  
-        >
-          {country.countryName}  
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+              {/* Country */}
+              <div className="grid gap-2">
+                <Label>Country</Label>
+                <Select
+                  value={currentCountry || locationState.country}
+                  onValueChange={(value) => {
+                    const selectedCountry = countries.find(c => c.countryName === value);
+                    if (selectedCountry) {
+                      updateAddress({ 
+                        country: selectedCountry.countryName,
+                        state: '' // Reset state when country changes
+                      });
+                      updateLocation({
+                        country: selectedCountry.countryName,
+                        geonameId: String(selectedCountry.geonameId),
+                        state: ''
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-[42px]">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem 
+                        key={country.geonameId} 
+                        value={country.countryName}
+                      >
+                        {country.displayName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-{/* State/Province Selection */}
-{party.address?.country && (
-  <div className="grid gap-2">
-    <Label>State/Province</Label>
-    {loadingStates ? (
-      <Skeleton className="h-10 w-full" />
-    ) : (
-      <Select
-        value={party.address.state}
-        onValueChange={(value) => {
-          const selectedState = states.find(s => s.displayName === value);
-          if (selectedState) {
-            updateAddress({ 
-              state: selectedState.displayName // Use full state name
-            });
-          }
-        }}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Select state/province" />
-        </SelectTrigger>
-        <SelectContent>
-          {states.length > 0 ? (
-            states.map((state) => (
-              <SelectItem 
-                key={state.geonameId} 
-                value={state.displayName}
-              >
-                {state.displayName}
-              </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="none" disabled>No states available</SelectItem>
-          )}
-        </SelectContent>
-      </Select>
-    )}
-  </div>
-)}
+              {/* State/Province */}
+              {currentCountry && (
+                <div className="grid gap-2">
+                  <Label>State/Province</Label>
+                  {isLoadingStates ? (
+                    <Skeleton className="h-[42px] w-full" />
+                  ) : (
+                    <Select
+                      value={currentState || locationState.state}
+                      onValueChange={(value) => {
+                        updateAddress({ state: value });
+                        updateLocation({ state: value });
+                      }}
+                    >
+                      <SelectTrigger className="h-[42px]">
+                        <SelectValue placeholder="Select state/province" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {states.map((state) => (
+                          <SelectItem 
+                            key={state.geonameId} 
+                            value={state.displayName}
+                          >
+                            {state.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
 
               {/* City and Postal Code */}
               <div className="grid grid-cols-2 gap-4">
@@ -347,7 +438,7 @@ export function PartyDetailsForm({
                   <Label>City</Label>
                   <Input
                     placeholder="Enter city"
-                    value={party.address.city}
+                    value={party.address?.city || ''}
                     onChange={(e) => updateAddress({ city: e.target.value })}
                     className={cn(errors['address.city'] && "border-destructive")}
                   />
@@ -357,7 +448,7 @@ export function PartyDetailsForm({
                   <Label>Postal Code</Label>
                   <Input
                     placeholder="Enter postal code"
-                    value={party.address.postalCode}
+                    value={party.address?.postalCode || ''}
                     onChange={(e) => updateAddress({ postalCode: e.target.value })}
                     className={cn(errors['address.postalCode'] && "border-destructive")}
                   />
@@ -369,7 +460,7 @@ export function PartyDetailsForm({
                 <Label>Street Address</Label>
                 <Input
                   placeholder="Enter street address"
-                  value={party.address.street}
+                  value={party.address?.street || ''}
                   onChange={(e) => updateAddress({ street: e.target.value })}
                   className={cn(errors['address.street'] && "border-destructive")}
                 />
