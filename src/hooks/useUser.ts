@@ -1,9 +1,10 @@
-// src/hooks/useUser.ts
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from './use-toast';
 import { userApi } from '@/lib/api/user';
+import { authApi } from '@/lib/api/auth';
 import type { User, UserUpdateRequest } from '@/types/user';
+import type { OTPVerificationData } from '@/types/auth';
 
 export const useUser = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -73,16 +74,39 @@ export const useUser = () => {
     }
   }, [toast]);
 
-  const deleteAccount = useCallback(async (password: string) => {
+  const requestDeleteAccountOTP = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      await userApi.deleteAccount(password);
+      await authApi.requestDeleteAccountOTP();
+      toast({
+        title: "Verification Code Sent",
+        description: "Please check your email for the verification code"
+      });
+    } catch (err: any) {
+      const errorMessage = err.error?.message || 'Failed to request verification code';
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Request Error",
+        description: errorMessage
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const deleteAccount = useCallback(async (data: OTPVerificationData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await authApi.deleteAccount(data);
       toast({
         title: "Account Deleted",
         description: "Your account has been permanently deleted"
       });
-      router.push('/auth/login');
+      router.push('/login');
     } catch (err: any) {
       const errorMessage = err.error?.message || 'Failed to delete account';
       setError(errorMessage);
@@ -103,6 +127,6 @@ export const useUser = () => {
     getProfile,
     updateProfile,
     uploadAvatar,
+    requestDeleteAccountOTP,
     deleteAccount
-  };
-};
+  }};

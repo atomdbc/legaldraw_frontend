@@ -288,11 +288,11 @@ export const authApi = {
   },
 
   async requestDeleteAccountOTP(): Promise<void> {
-    return this.authenticatedRequest<void>(`${API_BASE_URL}/auth/delete-account/request-otp`, {
+    return this.authenticatedRequest<void>(`${API_BASE_URL}/auth/account/request-otp`, {
       method: 'POST'
     });
   },
-
+  
   async deleteAccount(data: OTPVerificationData): Promise<void> {
     try {
       await this.authenticatedRequest<void>(`${API_BASE_URL}/auth/account`, {

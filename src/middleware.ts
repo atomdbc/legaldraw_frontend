@@ -1,4 +1,3 @@
-// src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtDecode } from "jwt-decode";
@@ -6,9 +5,10 @@ import { DOCUMENT_TYPES } from '@/lib/utils/documentTypes';
 
 const publicPaths = [
   '/',          // Landing page
-  '/login', 
-  '/register', 
+  '/login',    
+  '/register',
   '/reset-password',
+  '/logout',    // Add logout as a public path
   // Add any other public paths here
 ];
 
@@ -28,6 +28,15 @@ export function middleware(request: NextRequest) {
     pathname.includes('favicon.ico')
   ) {
     return NextResponse.next();
+  }
+
+  // Special handling for logout
+  if (pathname === '/logout') {
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    // Clear auth cookies
+    response.cookies.delete('accessToken');
+    response.cookies.delete('refreshToken');
+    return response;
   }
 
   // Document type validation for create routes

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useDocument } from '@/hooks/useDocument';
+import { useRouter } from 'next/navigation';
+
 import {
   Bell,
   Search,
@@ -59,6 +61,7 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { authApi } from '@/lib/api/auth';
 
 // Main navigation with metadata
 const mainNavigation = [
@@ -232,6 +235,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [userData, setUserData] = useState<any>(null);
   const { documents = [], fetchDocuments } = useDocument();
 const hasFetched = useRef(false);
+const router = useRouter();
+
 
 useEffect(() => {
   if (!hasFetched.current) {
@@ -267,6 +272,19 @@ useEffect(() => {
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      // Call your logout API
+      await authApi.logout();
+      // Redirect to logout route which will clear cookies and redirect to login
+      router.push('/logout');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still try to redirect to logout route as fallback
+      router.push('/logout');
+    }
+  };
 
   const Sidebar = ({ isCollapsed }: { isCollapsed: boolean }) => (
     <div className="flex h-full flex-col gap-y-5">
@@ -362,9 +380,12 @@ useEffect(() => {
               <Link href="/settings/billing">Billing & Plans</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
-              <LogOut className="mr-2 h-4 w-4" /> Sign Out
-            </DropdownMenuItem>
+            <DropdownMenuItem 
+  className="text-red-600 cursor-pointer"
+  onClick={handleLogout}
+>
+  <LogOut className="mr-2 h-4 w-4" /> Sign Out
+</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -662,7 +683,7 @@ useEffect(() => {
                     <FileText className="mr-2 h-4 w-4" />
                     Documentation
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/tutorials'}>
+                  <DropdownMenuItem onClick={() => window.location.href = '/documentation'}>
                     <Play className="mr-2 h-4 w-4" />
                     Video Tutorials
                   </DropdownMenuItem>
