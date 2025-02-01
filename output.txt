@@ -192,6 +192,7 @@
 │   │   ├── useDocument.ts
 │   │   ├── useDocumentProgress.ts
 │   │   ├── useDownloads.ts
+│   │   ├── useLocation.ts
 │   │   ├── useNotifications.ts
 │   │   ├── usePayment.ts
 │   │   ├── useSupport.ts
@@ -202,12 +203,15 @@
 │   │   │   ├── auth.ts
 │   │   │   ├── document.ts
 │   │   │   ├── download.ts
+│   │   │   ├── locationService.ts
 │   │   │   ├── middleware.ts
 │   │   │   ├── notification.ts
 │   │   │   ├── payment.ts
 │   │   │   ├── support.ts
 │   │   │   ├── user.ts
 │   │   │   └── waitlist.ts
+│   │   ├── config
+│   │   │   └── jurisdictions.ts
 │   │   ├── data
 │   │   │   └── locations.ts
 │   │   ├── presets
@@ -238,4 +242,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-54 directories, 185 files
+55 directories, 188 files
