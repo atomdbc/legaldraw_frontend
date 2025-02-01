@@ -1,7 +1,7 @@
 // src/app/documentation/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -50,7 +50,7 @@ const sections = {
   }
 };
 
-export default function DocumentationPage() {
+function DocumentationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState('introduction');
@@ -193,10 +193,20 @@ export default function DocumentationPage() {
         {/* Content */}
         <main className="container py-6">
           <div className="mx-auto max-w-4xl">
-            <ActiveSection />
+            <Suspense fallback={<div>Loading section...</div>}>
+              <ActiveSection />
+            </Suspense>
           </div>
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DocumentationPage() {
+  return (
+    <Suspense fallback={<div>Loading documentation...</div>}>
+      <DocumentationContent />
+    </Suspense>
   );
 }
