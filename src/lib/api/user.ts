@@ -2,7 +2,7 @@
 import { authApi } from './auth';
 import type { User, UserUpdateRequest } from '@/types/user';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.59.116.14';
 
 export class UserApiError extends Error {
   constructor(public error: { status: number; message: string; code?: string }) {

@@ -9,7 +9,7 @@ import type {
   UsageStatsResponse
 } from '@/types/payment';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.59.116.14';
 
 export class PaymentApiError extends Error {
   constructor(public error: { status: number; message: string; code?: string; detail?: any }) {
