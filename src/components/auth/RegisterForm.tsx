@@ -35,11 +35,11 @@ export function RegisterForm() {
     setLoading(true);
     
     try {
-      await register(
-        formData.email,
-        formData.fullName,
-        formData.organization
-      );
+      await register({
+        email: formData.email,
+        full_name: formData.fullName,
+        company: formData.organization
+      });
       setShowOTPInput(true);
       setInfo('Please enter the verification code sent to your email.');
     } catch (err: any) {
@@ -50,8 +50,7 @@ export function RegisterForm() {
     } finally {
       setLoading(false);
     }
-  };
-
+};
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

@@ -109,37 +109,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (
-    email: string,
-    full_name: string,
-    company?: string,
-    role?: string
-  ) => {
+  const register = async (userData: { email: string, full_name: string, company: string }) => {
     try {
       setIsLoading(true);
-      
-      // Register and get response with tokens
-      const response = await authApi.register({
-        email,
-        full_name,
-        company,
-        role
-      });
-  
-      // Set user from registration response
+      const response = await authApi.register(userData);
       if (response.user) {
         setUser(response.user);
       }
-      
-      // OTP is already sent during registration, no need to request again
-      return;
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  };
+};
 
   const verifyEmail = async (email: string, otp: string) => {
     try {

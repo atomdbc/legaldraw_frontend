@@ -18,9 +18,9 @@ export interface UserProfile {
 
 export interface RegisterData {
   email: string;
-  full_name: string;  // Changed from fullName
-  company?: string;   // Changed from organization
-  role?: string;
+  full_name: string;  // Changed from fullName to match backend
+  company: string;    // Changed from organization to match backend
+  role?: string;      // Optional
 }
 
 export interface UserUpdateData {
