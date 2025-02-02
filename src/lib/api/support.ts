@@ -8,7 +8,7 @@ import type {
   TicketResponse 
 } from '@/types/support';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.59.116.14';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export class SupportApiError extends Error {
   constructor(public error: { status: number; message: string; code?: string }) {

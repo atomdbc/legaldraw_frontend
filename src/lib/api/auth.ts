@@ -11,7 +11,7 @@ import {
 } from "@/types/auth";
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.59.116.14';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Cookie expiration times in days
 const ACCESS_TOKEN_EXPIRY = 4/24; // 4 hours in days (4/24)

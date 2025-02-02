@@ -1,7 +1,8 @@
-// src/hooks/useLocation.ts
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { locationService, GeoLocation } from '@/lib/api/locationService';
+
+const CACHE_KEY = 'preloaded-countries';
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface LocationState {
   country: string;
@@ -17,14 +18,37 @@ interface UseLocationOptions {
   initialState?: string;
 }
 
+async function preloadCountries() {
+  try {
+    if (typeof window === 'undefined') return [];
+
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < CACHE_DURATION) {
+        return data;
+      }
+    }
+    
+    const countries = await locationService.getAllCountries();
+    if (countries.length > 0) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        data: countries,
+        timestamp: Date.now()
+      }));
+    }
+    return countries;
+  } catch (error) {
+    console.error('Error preloading countries:', error);
+    return [];
+  }
+}
+
 export function useLocation(options: UseLocationOptions = {}) {
-  const {
-    persistKey,
-    initialCountry,
-    initialState
-  } = options;
+  const { persistKey, initialCountry, initialState } = options;
 
   const initRef = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize state from localStorage or provided values
   const [locationState, setLocationState] = useState<LocationState>(() => {
@@ -38,7 +62,7 @@ export function useLocation(options: UseLocationOptions = {}) {
       };
     }
 
-    // First check localStorage
+    // Check localStorage first
     if (persistKey) {
       const saved = localStorage.getItem(`location-${persistKey}`);
       if (saved) {
@@ -55,7 +79,7 @@ export function useLocation(options: UseLocationOptions = {}) {
       }
     }
 
-    // Then use initial values if provided
+    // Use initial values if provided
     if (initialCountry) {
       return {
         country: initialCountry,
@@ -66,6 +90,7 @@ export function useLocation(options: UseLocationOptions = {}) {
       };
     }
 
+    // Default state
     return {
       country: '',
       state: '',
@@ -75,7 +100,24 @@ export function useLocation(options: UseLocationOptions = {}) {
     };
   });
 
-  const [countries, setCountries] = useState<GeoLocation[]>([]);
+  // Initialize countries from cache if available
+  const [countries, setCountries] = useState<GeoLocation[]>(() => {
+    if (typeof window === 'undefined') return [];
+
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          return data;
+        }
+      } catch (error) {
+        console.error('Error parsing cached countries:', error);
+      }
+    }
+    return [];
+  });
+
   const [states, setStates] = useState<GeoLocation[]>([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   const [isLoadingStates, setIsLoadingStates] = useState(false);
@@ -96,26 +138,35 @@ export function useLocation(options: UseLocationOptions = {}) {
     }
   }, []);
 
-  // Load countries first
+  // Load or refresh countries
   useEffect(() => {
     async function loadCountries() {
+      if (countries.length > 0) {
+        setIsLoadingCountries(false);
+        setIsInitialized(true);
+        return;
+      }
+
       try {
-        const data = await locationService.getAllCountries();
-        setCountries(data);
-        return data;
+        setIsLoadingCountries(true);
+        const data = await preloadCountries();
+        if (data.length > 0) {
+          setCountries(data);
+        }
       } catch (error) {
         console.error('Error loading countries:', error);
-        return [];
       } finally {
         setIsLoadingCountries(false);
+        setIsInitialized(true);
       }
     }
+
     loadCountries();
   }, []);
 
   // Handle initial/saved country and load states
   useEffect(() => {
-    if (!countries.length || initRef.current) return;
+    if (!isInitialized || !countries.length || initRef.current) return;
 
     async function initializeLocationState() {
       const countryToUse = locationState.country || initialCountry;
@@ -126,20 +177,18 @@ export function useLocation(options: UseLocationOptions = {}) {
 
       const geonameId = String(country.geonameId);
       
-      // Set the geonameId first
       setLocationState(prev => ({
         ...prev,
         country: country.countryName,
         geonameId
       }));
 
-      // Immediately load states
       await loadStatesForCountry(geonameId);
+      initRef.current = true;
     }
 
     initializeLocationState();
-    initRef.current = true;
-  }, [countries, locationState.country, initialCountry, loadStatesForCountry]);
+  }, [countries, isInitialized, locationState.country, initialCountry, loadStatesForCountry]);
 
   // Persist to localStorage
   useEffect(() => {
@@ -182,13 +231,22 @@ export function useLocation(options: UseLocationOptions = {}) {
     initRef.current = false;
   }, [persistKey]);
 
+  // Clear cache helper
+  const clearCache = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(CACHE_KEY);
+    }
+  }, []);
+
   return {
     locationState,
     updateLocation,
     resetLocation,
+    clearCache,
     countries,
     states,
     isLoadingCountries,
-    isLoadingStates
+    isLoadingStates,
+    isInitialized
   };
 }

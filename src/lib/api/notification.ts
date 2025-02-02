@@ -7,7 +7,7 @@ import type {
   NotificationLog
 } from '@/types/notification';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.59.116.14';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export class NotificationApiError extends Error {
   constructor(public error: { status: number; message: string; code?: string }) {

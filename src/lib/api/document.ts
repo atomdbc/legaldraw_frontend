@@ -12,7 +12,7 @@ import type {
   PublishDraftRequest
 } from '@/types/document';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.59.116.14';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export class DocumentApiError extends Error {
   constructor(public error: { status: number; message: string; code?: string; detail?: any }) {
