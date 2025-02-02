@@ -1,8 +1,13 @@
 .
 ├── README.md
+├── command.sh
 ├── components.json
 ├── next-env.d.ts
 ├── next.config.ts
+├── nginx-erro-html
+│   ├── 404.html
+│   ├── 500.html
+│   └── 502.html
 ├── output.txt
 ├── package.json
 ├── postcss.config.mjs
@@ -243,4 +248,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-55 directories, 189 files
+56 directories, 193 files
