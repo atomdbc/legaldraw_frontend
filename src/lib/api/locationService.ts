@@ -176,8 +176,8 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
   });
   
   try {
-    // Use the Next.js API route which handles the HTTPS rewrite
-    const url = `${API_BASE_URL}/${endpoint}?${searchParams.toString()}`;
+    // Ensure we're using the Next.js API route which handles the HTTPS rewrite
+    const url = `/api/geonames/${endpoint}?${searchParams.toString()}`;
     console.log('Making request to:', url); // Debug log
     
     const response = await fetch(url, {
@@ -185,12 +185,10 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
       headers: {
         'Accept': 'application/json',
         'Cache-Control': 'no-cache'
-      },
-      next: { revalidate: 3600 }
+      }
     });
 
     if (!response.ok) {
-      console.error('API response not ok:', response.status);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -311,6 +309,7 @@ class LocationService {
     }
   }
 
+  
   getDefaultLocations() {
     return {
       countryId: DEFAULT_LOCATION.COUNTRY_ID,
