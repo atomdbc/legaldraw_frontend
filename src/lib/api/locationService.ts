@@ -1,5 +1,5 @@
 const GEONAMES_USERNAME = process.env.NEXT_PUBLIC_GEONAMES_USERNAME;
-const API_BASE_URL = 'https://secure.geonames.org';
+const API_BASE_URL = '/api/geonames';  // Changed from https://secure.geonames.org
 
 // Type definitions
 export interface GeoLocation {
@@ -198,7 +198,8 @@ async function makeApiRequest(url: string) {
     headers: {
       'Accept': 'application/json',
       'User-Agent': 'LegalDraw/1.0'
-    }
+    },
+    next: { revalidate: 3600 }
   };
 
   try {
