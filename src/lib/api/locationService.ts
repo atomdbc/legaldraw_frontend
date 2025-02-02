@@ -1,7 +1,8 @@
 // src/lib/services/locationService.ts
 
 const GEONAMES_USERNAME = process.env.NEXT_PUBLIC_GEONAMES_USERNAME;
-const API_BASE_URL = 'http://api.geonames.org';
+const API_BASE_URL = 'https://secure.geonames.org';
+
 
 // Type definitions
 export interface GeoLocation {
