@@ -1,7 +1,10 @@
-const GEONAMES_USERNAME = process.env.NEXT_PUBLIC_GEONAMES_USERNAME;
-const API_BASE_URL = '/api/geonames';
+const BASE_API_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:3000'  // Your Next.js dev server port
+  : 'https://legaldraw.com'; // Your production domain
 
-// Type definitions first
+const GEONAMES_USERNAME = process.env.NEXT_PUBLIC_GEONAMES_USERNAME;
+
+// Type definitions
 export interface GeoLocation {
   geonameId: string | number;
   countryCode?: string;
@@ -176,16 +179,17 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
   });
   
   try {
-    // Use relative URL to ensure it goes through our proxy
+    // Always use the proxy endpoint
     const url = `/api/geonames/${endpoint}?${searchParams.toString()}`;
-    console.log('Making request to:', url); // Debug log
+    console.log('Making request to proxy:', url);
     
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'Cache-Control': 'no-cache'
-      }
+      },
+      credentials: 'same-origin'
     });
 
     if (!response.ok) {
@@ -202,7 +206,6 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
     });
   }
 }
-
 
 // Location service class
 class LocationService {
@@ -261,15 +264,14 @@ class LocationService {
 
   async getStatesForCountry(geonameId: string): Promise<GeoLocation[]> {
     if (!geonameId) return [];
-  
+
     const cacheKey = `states_${geonameId}`;
     const cachedStates = this.cache.get(cacheKey);
     if (cachedStates) return cachedStates;
-  
+
     try {
       const response = await makeApiRequest('childrenJSON', { 
         geonameId,
-        // Add these additional parameters for better results
         maxRows: '1000',
         featureClass: 'A',
         featureCode: 'ADM1'
@@ -282,7 +284,7 @@ class LocationService {
         this.cache.set(cacheKey, defaultStates);
         return defaultStates;
       }
-  
+
       const states = data.geonames
         .filter((state: GeoNamesState) => state.adminName1)
         .map((state: GeoNamesState) => ({
@@ -293,12 +295,12 @@ class LocationService {
           displayName: state.adminName1 || state.toponymName,
           value: state.adminName1 || state.toponymName
         }));
-  
+
       if (geonameId === DEFAULT_LOCATION.COUNTRY_ID && 
           !states.some(s => s.adminCode1 === DEFAULT_LOCATION.STATE_CODE)) {
         states.unshift(DEFAULT_STATES[0]);
       }
-  
+
       states.sort((a, b) => a.displayName.localeCompare(b.displayName));
       this.cache.set(cacheKey, states);
       return states;
@@ -309,7 +311,6 @@ class LocationService {
       return defaultStates;
     }
   }
-
 
   getDefaultLocations() {
     return {

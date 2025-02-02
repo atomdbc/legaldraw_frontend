@@ -17,6 +17,55 @@ const authRequiredPaths = [
   '/settings'
 ];
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Configure CSP based on environment
+const getCspDirectives = () => {
+  const directives = [
+    // Default - Only allow resources from same origin
+    "default-src 'self'",
+    
+    // Scripts - Allow inline and eval for development tools + CDN
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
+    
+    // Styles - Allow inline for shadcn/ui
+    "style-src 'self' 'unsafe-inline'",
+    
+    // Images - Allow data URIs, HTTPS, and blobs
+    "img-src 'self' data: https: blob:",
+    
+    // Fonts - Allow self and CDN
+    "font-src 'self' data: https://cdnjs.cloudflare.com",
+    
+    // Connect - Configure based on environment
+    `connect-src 'self' ${
+      isDevelopment 
+        ? 'http://localhost:3000 http://localhost:8000 ws://localhost:* wss://localhost:*' 
+        : 'https://legaldraw.com https://api.legaldraw.com'
+    } https://*.geonames.org https://secure.geonames.org`,
+    
+    // Frames - Prevent embedding
+    "frame-ancestors 'none'",
+    
+    // Forms - Only allow submissions to same origin
+    "form-action 'self'",
+    
+    // Base URI - Restrict to same origin
+    "base-uri 'self'",
+    
+    // Workers - Allow blob for web workers
+    "worker-src 'self' blob:",
+    
+    // Media - Restrict to same origin
+    "media-src 'self'",
+    
+    // Object/Embed - Prevent unauthorized plugins
+    "object-src 'none'"
+  ];
+
+  return directives.join('; ');
+};
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -51,7 +100,7 @@ export function middleware(request: NextRequest) {
   // Document type validation for create routes
   if (pathname.startsWith('/documents/create/')) {
     const segments = pathname.split('/');
-    const type = segments[3];
+    const type = segments[3]; // ["", "documents", "create", "type", ...]
     
     if (!DOCUMENT_TYPES.includes(type as any)) {
       return NextResponse.redirect(new URL('/documents/create', request.url));
@@ -66,9 +115,11 @@ export function middleware(request: NextRequest) {
       try {
         const decoded = jwtDecode(token);
         if (decoded && decoded.exp && decoded.exp > Date.now() / 1000) {
+          // If user is already authenticated, redirect to dashboard
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
       } catch (error) {
+        // If token is invalid, continue as normal
         return NextResponse.next();
       }
     }
@@ -103,22 +154,8 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Updated Content Security Policy to include auth server
-  const cspDirectives = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https: blob:",
-    "font-src 'self' data: https://cdnjs.cloudflare.com",
-    // Add localhost:8000 and your production auth server to connect-src
-    "connect-src 'self' https://api.legaldraw.com https://*.geonames.org https://secure.geonames.org ws://localhost:* wss://localhost:* http://localhost:8000 https://your-production-auth-server.com",
-    "frame-ancestors 'none'",
-    "form-action 'self'",
-    "base-uri 'self'",
-    "worker-src 'self' blob:"
-  ].join('; ');
-
-  response.headers.set('Content-Security-Policy', cspDirectives);
+  // Content Security Policy
+  response.headers.set('Content-Security-Policy', getCspDirectives());
 
   return response;
 }
