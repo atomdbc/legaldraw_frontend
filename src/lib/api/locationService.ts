@@ -1,8 +1,5 @@
-// src/lib/services/locationService.ts
-
 const GEONAMES_USERNAME = process.env.NEXT_PUBLIC_GEONAMES_USERNAME;
 const API_BASE_URL = 'https://secure.geonames.org';
-
 
 // Type definitions
 export interface GeoLocation {
@@ -43,19 +40,43 @@ export const DEFAULT_LOCATION = {
   STATE_CODE: 'DE'
 } as const;
 
-// Default countries list for fallback
+// Enhanced default countries list
 const DEFAULT_COUNTRIES: GeoLocation[] = [
   {
-    geonameId: DEFAULT_LOCATION.COUNTRY_ID,
-    countryCode: DEFAULT_LOCATION.COUNTRY_CODE,
-    countryName: DEFAULT_LOCATION.COUNTRY_NAME,
-    toponymName: DEFAULT_LOCATION.COUNTRY_NAME,
-    displayName: DEFAULT_LOCATION.COUNTRY_NAME,
-    value: DEFAULT_LOCATION.COUNTRY_NAME
+    geonameId: '6252001',
+    countryCode: 'US',
+    countryName: 'United States',
+    toponymName: 'United States',
+    displayName: 'United States',
+    value: 'United States'
+  },
+  {
+    geonameId: '2635167',
+    countryCode: 'GB',
+    countryName: 'United Kingdom',
+    toponymName: 'United Kingdom',
+    displayName: 'United Kingdom',
+    value: 'United Kingdom'
+  },
+  {
+    geonameId: '2077456',
+    countryCode: 'CA',
+    countryName: 'Canada',
+    toponymName: 'Canada',
+    displayName: 'Canada',
+    value: 'Canada'
+  },
+  {
+    geonameId: '2921044',
+    countryCode: 'DE',
+    countryName: 'Germany',
+    toponymName: 'Germany',
+    displayName: 'Germany',
+    value: 'Germany'
   }
 ];
 
-// Default states list for USA fallback
+// Enhanced default states list
 const DEFAULT_STATES: GeoLocation[] = [
   {
     geonameId: '4142224',
@@ -64,6 +85,38 @@ const DEFAULT_STATES: GeoLocation[] = [
     toponymName: 'Delaware',
     displayName: 'Delaware',
     value: 'Delaware'
+  },
+  {
+    geonameId: '5128638',
+    adminCode1: 'NY',
+    adminName1: 'New York',
+    toponymName: 'New York',
+    displayName: 'New York',
+    value: 'New York'
+  },
+  {
+    geonameId: '5332921',
+    adminCode1: 'CA',
+    adminName1: 'California',
+    toponymName: 'California',
+    displayName: 'California',
+    value: 'California'
+  },
+  {
+    geonameId: '4155751',
+    adminCode1: 'FL',
+    adminName1: 'Florida',
+    toponymName: 'Florida',
+    displayName: 'Florida',
+    value: 'Florida'
+  },
+  {
+    geonameId: '4736286',
+    adminCode1: 'TX',
+    adminName1: 'Texas',
+    toponymName: 'Texas',
+    displayName: 'Texas',
+    value: 'Texas'
   }
 ];
 
@@ -75,7 +128,6 @@ class LocationCache {
 
   private constructor() {
     this.cache = new Map();
-    // Initialize from localStorage if available
     if (typeof window !== 'undefined') {
       try {
         const savedCache = localStorage.getItem('locationCache');
@@ -99,13 +151,9 @@ class LocationCache {
   }
 
   set(key: string, data: GeoLocation[]): void {
-    const entry = {
-      data,
-      timestamp: Date.now()
-    };
+    const entry = { data, timestamp: Date.now() };
     this.cache.set(key, entry);
 
-    // Save to localStorage
     if (typeof window !== 'undefined') {
       try {
         const cacheObj = Object.fromEntries(this.cache.entries());
@@ -144,11 +192,24 @@ class LocationCache {
   }
 }
 
-// Error handling
-class LocationServiceError extends Error {
-  constructor(message: string, public statusCode?: number) {
-    super(message);
-    this.name = 'LocationServiceError';
+async function makeApiRequest(url: string) {
+  const options = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'LegalDraw/1.0'
+    }
+  };
+
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response;
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
   }
 }
 
@@ -157,7 +218,8 @@ export const locationService = {
   async getAllCountries(): Promise<GeoLocation[]> {
     const cache = LocationCache.getInstance();
     const cachedCountries = cache.get('countries');
-    if (cachedCountries) return cachedCountries;
+    
+    console.log('Fetching countries, cached:', !!cachedCountries);
 
     try {
       if (!GEONAMES_USERNAME) {
@@ -165,18 +227,15 @@ export const locationService = {
         return DEFAULT_COUNTRIES;
       }
 
-      const response = await fetch(
+      const response = await makeApiRequest(
         `${API_BASE_URL}/countryInfoJSON?username=${GEONAMES_USERNAME}`
       );
       
-      if (!response.ok) {
-        console.warn('Failed to fetch countries, using defaults');
-        return DEFAULT_COUNTRIES;
-      }
-
       const data = await response.json();
+      console.log('API Response received:', !!data);
       
       if (!data?.geonames) {
+        console.warn('No geonames in response, using defaults');
         return DEFAULT_COUNTRIES;
       }
 
@@ -189,12 +248,10 @@ export const locationService = {
           displayName: country.countryName,
           value: country.countryName
         }))
-        .filter(country => country.countryName && country.geonameId); // Filter out invalid entries
+        .filter(country => country.countryName && country.geonameId);
 
-      // Sort countries alphabetically
       countries.sort((a, b) => a.displayName.localeCompare(b.displayName));
 
-      // Ensure USA is included
       if (!countries.some(c => c.countryCode === DEFAULT_LOCATION.COUNTRY_CODE)) {
         countries.unshift(DEFAULT_COUNTRIES[0]);
       }
@@ -209,25 +266,22 @@ export const locationService = {
 
   async getStatesForCountry(geonameId: string): Promise<GeoLocation[]> {
     try {
-      // For USA, return states immediately if API fails
       if (geonameId === DEFAULT_LOCATION.COUNTRY_ID) {
         try {
-          const response = await fetch(
+          console.log('Fetching USA states');
+          const response = await makeApiRequest(
             `${API_BASE_URL}/childrenJSON?geonameId=${geonameId}&username=${GEONAMES_USERNAME}`
           );
           
-          if (!response.ok) {
-            return DEFAULT_STATES;
-          }
-
           const data = await response.json();
+          console.log('States API Response received:', !!data);
           
           if (!data?.geonames) {
             return DEFAULT_STATES;
           }
 
           const states = data.geonames
-            .filter((state: GeoNamesState) => state.adminName1) // Only include actual states
+            .filter((state: GeoNamesState) => state.adminName1)
             .map((state: GeoNamesState) => ({
               geonameId: state.geonameId,
               adminCode1: state.adminCode1,
@@ -237,15 +291,11 @@ export const locationService = {
               value: state.adminName1 || state.toponymName
             }));
 
-          // Ensure Delaware is included for USA
-          if (geonameId === DEFAULT_LOCATION.COUNTRY_ID && 
-              !states.some(s => s.adminCode1 === DEFAULT_LOCATION.STATE_CODE)) {
+          if (!states.some(s => s.adminCode1 === DEFAULT_LOCATION.STATE_CODE)) {
             states.unshift(DEFAULT_STATES[0]);
           }
 
-          // Simple alphabetical sort for all states
           states.sort((a, b) => a.displayName.localeCompare(b.displayName));
-
           return states;
         } catch (error) {
           console.error('Error fetching USA states:', error);
@@ -253,19 +303,14 @@ export const locationService = {
         }
       }
 
-      // For other countries
-      const response = await fetch(
+      const response = await makeApiRequest(
         `${API_BASE_URL}/childrenJSON?geonameId=${geonameId}&username=${GEONAMES_USERNAME}`
       );
       
-      if (!response.ok) {
-        throw new LocationServiceError('Failed to fetch states', response.status);
-      }
-
       const data = await response.json();
       
       if (!data?.geonames) {
-        throw new LocationServiceError('Invalid response format from GeoNames API');
+        return [];
       }
 
       const states = data.geonames
@@ -283,7 +328,7 @@ export const locationService = {
       return states;
     } catch (error) {
       console.error('Error fetching states:', error);
-      return [];
+      return geonameId === DEFAULT_LOCATION.COUNTRY_ID ? DEFAULT_STATES : [];
     }
   },
 
