@@ -5,7 +5,7 @@ import { DOCUMENT_TYPES } from '@/lib/utils/documentTypes';
 
 const publicPaths = [
   '/',          // Landing page
-  '/login',    
+  '/login',     
   '/register',
   '/reset-password',
   '/logout',    // Add logout as a public path
@@ -21,13 +21,33 @@ const authRequiredPaths = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Force HTTPS in production
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !request.headers.get('x-forwarded-proto')?.includes('https') &&
+    !pathname.startsWith('/_next') && // Exclude Next.js internal routes
+    !pathname.startsWith('/api')    // Exclude API routes
+  ) {
+    const newUrl = `https://${request.headers.get('host')}${request.nextUrl.pathname}${request.nextUrl.search}`;
+    return NextResponse.redirect(newUrl, 301);
+  }
+
   // Allow public assets and API routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.includes('favicon.ico')
   ) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    
+    // Add security headers for API routes
+    if (pathname.startsWith('/api')) {
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
+    }
+    
+    return response;
   }
 
   // Special handling for logout
@@ -64,7 +84,13 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
       }
     }
-    return NextResponse.next();
+    
+    // Add security headers for public routes
+    const response = NextResponse.next();
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    return response;
   }
 
   // Protected routes handling
@@ -85,7 +111,33 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  // Add security headers for all other routes
+  const response = NextResponse.next();
+  
+  // Security Headers
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Content Security Policy
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' data: https://cdnjs.cloudflare.com",
+      "connect-src 'self' https://secure.geonames.org",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "base-uri 'self'"
+    ].join('; ')
+  );
+
+  return response;
 }
 
 export const config = {

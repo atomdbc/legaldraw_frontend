@@ -176,23 +176,34 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
   });
   
   try {
-    const response = await fetch(`${API_BASE_URL}/${endpoint}?${searchParams.toString()}`, {
+    // Use the Next.js API route which handles the HTTPS rewrite
+    const url = `${API_BASE_URL}/${endpoint}?${searchParams.toString()}`;
+    console.log('Making request to:', url); // Debug log
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
       },
       next: { revalidate: 3600 }
     });
 
     if (!response.ok) {
+      console.error('API response not ok:', response.status);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+
     return response;
   } catch (error) {
     console.error('API request failed:', endpoint, error);
-    throw error;
+    // Return default data instead of throwing
+    return new Response(JSON.stringify({ geonames: [] }), {
+      headers: { 'content-type': 'application/json' },
+    });
   }
 }
+
 
 // Location service class
 class LocationService {
@@ -251,15 +262,28 @@ class LocationService {
 
   async getStatesForCountry(geonameId: string): Promise<GeoLocation[]> {
     if (!geonameId) return [];
-
+  
+    const cacheKey = `states_${geonameId}`;
+    const cachedStates = this.cache.get(cacheKey);
+    if (cachedStates) return cachedStates;
+  
     try {
-      const response = await makeApiRequest('childrenJSON', { geonameId });
+      const response = await makeApiRequest('childrenJSON', { 
+        geonameId,
+        // Add these additional parameters for better results
+        maxRows: '1000',
+        featureClass: 'A',
+        featureCode: 'ADM1'
+      });
+      
       const data = await response.json();
       
       if (!data?.geonames) {
-        return geonameId === DEFAULT_LOCATION.COUNTRY_ID ? DEFAULT_STATES : [];
+        const defaultStates = geonameId === DEFAULT_LOCATION.COUNTRY_ID ? DEFAULT_STATES : [];
+        this.cache.set(cacheKey, defaultStates);
+        return defaultStates;
       }
-
+  
       const states = data.geonames
         .filter((state: GeoNamesState) => state.adminName1)
         .map((state: GeoNamesState) => ({
@@ -270,17 +294,20 @@ class LocationService {
           displayName: state.adminName1 || state.toponymName,
           value: state.adminName1 || state.toponymName
         }));
-
+  
       if (geonameId === DEFAULT_LOCATION.COUNTRY_ID && 
           !states.some(s => s.adminCode1 === DEFAULT_LOCATION.STATE_CODE)) {
         states.unshift(DEFAULT_STATES[0]);
       }
-
+  
       states.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      this.cache.set(cacheKey, states);
       return states;
     } catch (error) {
       console.error('Error fetching states:', error);
-      return geonameId === DEFAULT_LOCATION.COUNTRY_ID ? DEFAULT_STATES : [];
+      const defaultStates = geonameId === DEFAULT_LOCATION.COUNTRY_ID ? DEFAULT_STATES : [];
+      this.cache.set(cacheKey, defaultStates);
+      return defaultStates;
     }
   }
 
