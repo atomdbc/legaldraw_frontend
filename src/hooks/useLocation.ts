@@ -18,9 +18,23 @@ interface UseLocationOptions {
   initialState?: string;
 }
 
+// Move preloadCountries after importing the necessary types
+const getDefaultCountries = () => {
+  return [
+    {
+      geonameId: DEFAULT_LOCATION.COUNTRY_ID,
+      countryCode: DEFAULT_LOCATION.COUNTRY_CODE,
+      countryName: DEFAULT_LOCATION.COUNTRY_NAME,
+      toponymName: DEFAULT_LOCATION.COUNTRY_NAME,
+      displayName: DEFAULT_LOCATION.COUNTRY_NAME,
+      value: DEFAULT_LOCATION.COUNTRY_NAME
+    }
+  ] as GeoLocation[];
+};
+
 async function preloadCountries() {
   try {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') return getDefaultCountries();
 
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
@@ -40,9 +54,10 @@ async function preloadCountries() {
     return countries;
   } catch (error) {
     console.error('Error preloading countries:', error);
-    return [];
+    return getDefaultCountries();
   }
 }
+
 
 export function useLocation(options: UseLocationOptions = {}) {
   const { 
@@ -53,6 +68,7 @@ export function useLocation(options: UseLocationOptions = {}) {
 
   const initRef = useRef(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [countries, setCountries] = useState<GeoLocation[]>(() => getDefaultCountries());
 
   // Initialize state with USA as default
   const [locationState, setLocationState] = useState<LocationState>(() => {
@@ -93,24 +109,7 @@ export function useLocation(options: UseLocationOptions = {}) {
     };
   });
 
-  // Initialize countries from cache if available
-  const [countries, setCountries] = useState<GeoLocation[]>(() => {
-    if (typeof window === 'undefined') return [];
-
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      try {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_DURATION) {
-          return data;
-        }
-      } catch (error) {
-        console.error('Error parsing cached countries:', error);
-      }
-    }
-    return [];
-  });
-
+  // Initialize with default countries first
   const [states, setStates] = useState<GeoLocation[]>([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   const [isLoadingStates, setIsLoadingStates] = useState(false);
@@ -131,29 +130,53 @@ export function useLocation(options: UseLocationOptions = {}) {
     }
   }, []);
 
-  // Load or refresh countries and set USA as default
+  // Load countries with USA first, then fetch others
   useEffect(() => {
     async function loadCountries() {
       try {
         setIsLoadingCountries(true);
-        const data = await preloadCountries();
-        if (data.length > 0) {
-          setCountries(data);
-          // Find and set USA by default if no country is selected
-          if (!locationState.country) {
-            const usa = data.find(c => c.countryName === DEFAULT_LOCATION.COUNTRY_NAME);
-            if (usa) {
-              setLocationState(prev => ({
-                ...prev,
-                country: DEFAULT_LOCATION.COUNTRY_NAME,
-                state: DEFAULT_LOCATION.STATE,
-                geonameId: String(usa.geonameId)
-              }));
+        
+        // Start with default countries (including USA)
+        setCountries(DEFAULT_COUNTRIES);
+
+        // Try to load additional countries from API
+        const apiCountries = await preloadCountries();
+        
+        if (apiCountries.length > 0) {
+          // Create a merged list preserving USA and adding new countries
+          const mergedCountries = [...DEFAULT_COUNTRIES];
+          
+          // Add non-duplicate countries from API
+          apiCountries.forEach(country => {
+            if (!mergedCountries.some(c => c.countryCode === country.countryCode)) {
+              mergedCountries.push(country);
             }
-          }
+          });
+
+          // Sort alphabetically but keep USA first
+          const sortedCountries = mergedCountries.sort((a, b) => {
+            if (a.countryCode === DEFAULT_LOCATION.COUNTRY_CODE) return -1;
+            if (b.countryCode === DEFAULT_LOCATION.COUNTRY_CODE) return 1;
+            return a.displayName.localeCompare(b.displayName);
+          });
+
+          setCountries(sortedCountries);
+        }
+
+        // Ensure default country is set
+        if (!locationState.country || locationState.country === DEFAULT_LOCATION.COUNTRY_NAME) {
+          const usa = DEFAULT_COUNTRIES[0];
+          setLocationState(prev => ({
+            ...prev,
+            country: DEFAULT_LOCATION.COUNTRY_NAME,
+            state: DEFAULT_LOCATION.STATE,
+            geonameId: String(usa.geonameId)
+          }));
         }
       } catch (error) {
         console.error('Error loading countries:', error);
+        // Keep default countries on error
+        setCountries(DEFAULT_COUNTRIES);
       } finally {
         setIsLoadingCountries(false);
         setIsInitialized(true);
