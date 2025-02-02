@@ -176,7 +176,7 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
   });
   
   try {
-    // Ensure we're using the Next.js API route which handles the HTTPS rewrite
+    // Use relative URL to ensure it goes through our proxy
     const url = `/api/geonames/${endpoint}?${searchParams.toString()}`;
     console.log('Making request to:', url); // Debug log
     
@@ -189,6 +189,7 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
     });
 
     if (!response.ok) {
+      console.error('API response not ok:', response.status);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -309,7 +310,7 @@ class LocationService {
     }
   }
 
-  
+
   getDefaultLocations() {
     return {
       countryId: DEFAULT_LOCATION.COUNTRY_ID,

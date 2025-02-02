@@ -9,7 +9,6 @@ const publicPaths = [
   '/register',
   '/reset-password',
   '/logout',    // Add logout as a public path
-  // Add any other public paths here
 ];
 
 const authRequiredPaths = [
@@ -38,20 +37,12 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.includes('favicon.ico')
   ) {
-    const response = NextResponse.next();
-    if (pathname.startsWith('/api')) {
-      // Add security headers for API routes
-      response.headers.set('X-Content-Type-Options', 'nosniff');
-      response.headers.set('X-Frame-Options', 'DENY');
-      response.headers.set('X-XSS-Protection', '1; mode=block');
-    }
-    return response;
+    return NextResponse.next();
   }
 
   // Special handling for logout
   if (pathname === '/logout') {
     const response = NextResponse.redirect(new URL('/login', request.url));
-    // Clear auth cookies
     response.cookies.delete('accessToken');
     response.cookies.delete('refreshToken');
     return response;
@@ -60,8 +51,8 @@ export function middleware(request: NextRequest) {
   // Document type validation for create routes
   if (pathname.startsWith('/documents/create/')) {
     const segments = pathname.split('/');
-    const type = segments[3]; // ["", "documents", "create", "type", ...]
-
+    const type = segments[3];
+    
     if (!DOCUMENT_TYPES.includes(type as any)) {
       return NextResponse.redirect(new URL('/documents/create', request.url));
     }
@@ -75,18 +66,13 @@ export function middleware(request: NextRequest) {
       try {
         const decoded = jwtDecode(token);
         if (decoded && decoded.exp && decoded.exp > Date.now() / 1000) {
-          // If user is already authenticated, redirect to dashboard
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
       } catch (error) {
-        const response = NextResponse.next();
-        addSecurityHeaders(response);
-        return response;
+        return NextResponse.next();
       }
     }
-    const response = NextResponse.next();
-    addSecurityHeaders(response);
-    return response;
+    return NextResponse.next();
   }
 
   // Protected routes handling
@@ -109,12 +95,7 @@ export function middleware(request: NextRequest) {
 
   // Add security headers for all other routes
   const response = NextResponse.next();
-  addSecurityHeaders(response);
-  return response;
-}
-
-// Helper function to add security headers
-function addSecurityHeaders(response: NextResponse) {
+  
   // Security Headers
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -122,37 +103,24 @@ function addSecurityHeaders(response: NextResponse) {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Content Security Policy
-  const cspHeader = [
-    // Default fallback
+  // Updated Content Security Policy to include auth server
+  const cspDirectives = [
     "default-src 'self'",
-    // Scripts
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
-    // Styles
     "style-src 'self' 'unsafe-inline'",
-    // Images
     "img-src 'self' data: https: blob:",
-    // Fonts
     "font-src 'self' data: https://cdnjs.cloudflare.com",
-    // Connect (APIs)
-    "connect-src 'self' https://api.legaldraw.com https://*.geonames.org https://secure.geonames.org ws://localhost:* wss://localhost:*",
-    // Frames
+    // Add localhost:8000 and your production auth server to connect-src
+    "connect-src 'self' https://api.legaldraw.com https://*.geonames.org https://secure.geonames.org ws://localhost:* wss://localhost:* http://localhost:8000 https://your-production-auth-server.com",
     "frame-ancestors 'none'",
-    // Forms
     "form-action 'self'",
-    // Base URI
     "base-uri 'self'",
-    // Manifest
-    "manifest-src 'self'",
-    // Media
-    "media-src 'self'",
-    // Object
-    "object-src 'none'",
-    // Worker
-    "worker-src 'self' blob:",
+    "worker-src 'self' blob:"
   ].join('; ');
 
-  response.headers.set('Content-Security-Policy', cspHeader);
+  response.headers.set('Content-Security-Policy', cspDirectives);
+
+  return response;
 }
 
 export const config = {

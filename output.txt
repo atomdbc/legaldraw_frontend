@@ -3,7 +3,7 @@
 ├── command.sh
 ├── components.json
 ├── next-env.d.ts
-├── next.config.ts
+├── next.config.mjs
 ├── nginx-erro-html
 │   ├── 404.html
 │   ├── 500.html
