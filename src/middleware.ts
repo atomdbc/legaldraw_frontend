@@ -25,8 +25,8 @@ export function middleware(request: NextRequest) {
   if (
     process.env.NODE_ENV === 'production' &&
     !request.headers.get('x-forwarded-proto')?.includes('https') &&
-    !pathname.startsWith('/_next') && // Exclude Next.js internal routes
-    !pathname.startsWith('/api')    // Exclude API routes
+    !pathname.startsWith('/_next') &&
+    !pathname.startsWith('/api')
   ) {
     const newUrl = `https://${request.headers.get('host')}${request.nextUrl.pathname}${request.nextUrl.search}`;
     return NextResponse.redirect(newUrl, 301);
@@ -39,14 +39,12 @@ export function middleware(request: NextRequest) {
     pathname.includes('favicon.ico')
   ) {
     const response = NextResponse.next();
-    
-    // Add security headers for API routes
     if (pathname.startsWith('/api')) {
+      // Add security headers for API routes
       response.headers.set('X-Content-Type-Options', 'nosniff');
       response.headers.set('X-Frame-Options', 'DENY');
       response.headers.set('X-XSS-Protection', '1; mode=block');
     }
-    
     return response;
   }
 
@@ -63,7 +61,7 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/documents/create/')) {
     const segments = pathname.split('/');
     const type = segments[3]; // ["", "documents", "create", "type", ...]
-    
+
     if (!DOCUMENT_TYPES.includes(type as any)) {
       return NextResponse.redirect(new URL('/documents/create', request.url));
     }
@@ -81,15 +79,13 @@ export function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
       } catch (error) {
-        return NextResponse.next();
+        const response = NextResponse.next();
+        addSecurityHeaders(response);
+        return response;
       }
     }
-    
-    // Add security headers for public routes
     const response = NextResponse.next();
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-XSS-Protection', '1; mode=block');
+    addSecurityHeaders(response);
     return response;
   }
 
@@ -113,31 +109,50 @@ export function middleware(request: NextRequest) {
 
   // Add security headers for all other routes
   const response = NextResponse.next();
-  
+  addSecurityHeaders(response);
+  return response;
+}
+
+// Helper function to add security headers
+function addSecurityHeaders(response: NextResponse) {
   // Security Headers
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
-  // Content Security Policy
-  response.headers.set(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https: blob:",
-      "font-src 'self' data: https://cdnjs.cloudflare.com",
-      "connect-src 'self' https://secure.geonames.org",
-      "frame-ancestors 'none'",
-      "form-action 'self'",
-      "base-uri 'self'"
-    ].join('; ')
-  );
 
-  return response;
+  // Content Security Policy
+  const cspHeader = [
+    // Default fallback
+    "default-src 'self'",
+    // Scripts
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
+    // Styles
+    "style-src 'self' 'unsafe-inline'",
+    // Images
+    "img-src 'self' data: https: blob:",
+    // Fonts
+    "font-src 'self' data: https://cdnjs.cloudflare.com",
+    // Connect (APIs)
+    "connect-src 'self' https://api.legaldraw.com https://*.geonames.org https://secure.geonames.org ws://localhost:* wss://localhost:*",
+    // Frames
+    "frame-ancestors 'none'",
+    // Forms
+    "form-action 'self'",
+    // Base URI
+    "base-uri 'self'",
+    // Manifest
+    "manifest-src 'self'",
+    // Media
+    "media-src 'self'",
+    // Object
+    "object-src 'none'",
+    // Worker
+    "worker-src 'self' blob:",
+  ].join('; ');
+
+  response.headers.set('Content-Security-Policy', cspHeader);
 }
 
 export const config = {
