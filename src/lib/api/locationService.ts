@@ -1,7 +1,7 @@
 const GEONAMES_USERNAME = process.env.NEXT_PUBLIC_GEONAMES_USERNAME;
-const API_BASE_URL = 'https://secure.geonames.org';
+const API_BASE_URL = '/api/geonames';
 
-// Type definitions
+// Type definitions first
 export interface GeoLocation {
   geonameId: string | number;
   countryCode?: string;
@@ -40,15 +40,15 @@ export const DEFAULT_LOCATION = {
   STATE_CODE: 'DE'
 } as const;
 
-// Enhanced default countries list
+// Default countries list
 const DEFAULT_COUNTRIES: GeoLocation[] = [
   {
-    geonameId: '6252001',
-    countryCode: 'US',
-    countryName: 'United States',
-    toponymName: 'United States',
-    displayName: 'United States',
-    value: 'United States'
+    geonameId: DEFAULT_LOCATION.COUNTRY_ID,
+    countryCode: DEFAULT_LOCATION.COUNTRY_CODE,
+    countryName: DEFAULT_LOCATION.COUNTRY_NAME,
+    toponymName: DEFAULT_LOCATION.COUNTRY_NAME,
+    displayName: DEFAULT_LOCATION.COUNTRY_NAME,
+    value: DEFAULT_LOCATION.COUNTRY_NAME
   },
   {
     geonameId: '2635167',
@@ -65,18 +65,10 @@ const DEFAULT_COUNTRIES: GeoLocation[] = [
     toponymName: 'Canada',
     displayName: 'Canada',
     value: 'Canada'
-  },
-  {
-    geonameId: '2921044',
-    countryCode: 'DE',
-    countryName: 'Germany',
-    toponymName: 'Germany',
-    displayName: 'Germany',
-    value: 'Germany'
   }
 ];
 
-// Enhanced default states list
+// Default states list
 const DEFAULT_STATES: GeoLocation[] = [
   {
     geonameId: '4142224',
@@ -101,22 +93,6 @@ const DEFAULT_STATES: GeoLocation[] = [
     toponymName: 'California',
     displayName: 'California',
     value: 'California'
-  },
-  {
-    geonameId: '4155751',
-    adminCode1: 'FL',
-    adminName1: 'Florida',
-    toponymName: 'Florida',
-    displayName: 'Florida',
-    value: 'Florida'
-  },
-  {
-    geonameId: '4736286',
-    adminCode1: 'TX',
-    adminName1: 'Texas',
-    toponymName: 'Texas',
-    displayName: 'Texas',
-    value: 'Texas'
   }
 ];
 
@@ -192,21 +168,27 @@ class LocationCache {
   }
 }
 
-async function makeApiRequest(url: string) {
-  const options = {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'LegalDraw/1.0'
-    },
-    next: { revalidate: 3600 }
-  };
+// API request helper
+async function makeApiRequest(endpoint: string, params: Record<string, string>) {
+  const searchParams = new URLSearchParams({
+    ...params,
+    username: GEONAMES_USERNAME || ''
+  });
+  
+  const url = `${API_BASE_URL}/${endpoint}?${searchParams.toString()}`;
 
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
     return response;
   } catch (error) {
     console.error('API request failed:', error);
@@ -214,13 +196,17 @@ async function makeApiRequest(url: string) {
   }
 }
 
-// Main service
-export const locationService = {
+// Location service class
+class LocationService {
+  private cache: LocationCache;
+
+  constructor() {
+    this.cache = LocationCache.getInstance();
+  }
+
   async getAllCountries(): Promise<GeoLocation[]> {
-    const cache = LocationCache.getInstance();
-    const cachedCountries = cache.get('countries');
-    
-    console.log('Fetching countries, cached:', !!cachedCountries);
+    const cachedCountries = this.cache.get('countries');
+    if (cachedCountries) return cachedCountries;
 
     try {
       if (!GEONAMES_USERNAME) {
@@ -228,15 +214,10 @@ export const locationService = {
         return DEFAULT_COUNTRIES;
       }
 
-      const response = await makeApiRequest(
-        `${API_BASE_URL}/countryInfoJSON?username=${GEONAMES_USERNAME}`
-      );
-      
+      const response = await makeApiRequest('countryInfoJSON', {});
       const data = await response.json();
-      console.log('API Response received:', !!data);
       
       if (!data?.geonames) {
-        console.warn('No geonames in response, using defaults');
         return DEFAULT_COUNTRIES;
       }
 
@@ -253,65 +234,32 @@ export const locationService = {
 
       countries.sort((a, b) => a.displayName.localeCompare(b.displayName));
 
-      if (!countries.some(c => c.countryCode === DEFAULT_LOCATION.COUNTRY_CODE)) {
+      // Ensure USA is first
+      const usaIndex = countries.findIndex(c => c.countryCode === DEFAULT_LOCATION.COUNTRY_CODE);
+      if (usaIndex === -1) {
         countries.unshift(DEFAULT_COUNTRIES[0]);
+      } else if (usaIndex > 0) {
+        const [usa] = countries.splice(usaIndex, 1);
+        countries.unshift(usa);
       }
 
-      cache.set('countries', countries);
+      this.cache.set('countries', countries);
       return countries;
     } catch (error) {
       console.error('Error fetching countries:', error);
       return DEFAULT_COUNTRIES;
     }
-  },
+  }
 
   async getStatesForCountry(geonameId: string): Promise<GeoLocation[]> {
+    if (!geonameId) return [];
+
     try {
-      if (geonameId === DEFAULT_LOCATION.COUNTRY_ID) {
-        try {
-          console.log('Fetching USA states');
-          const response = await makeApiRequest(
-            `${API_BASE_URL}/childrenJSON?geonameId=${geonameId}&username=${GEONAMES_USERNAME}`
-          );
-          
-          const data = await response.json();
-          console.log('States API Response received:', !!data);
-          
-          if (!data?.geonames) {
-            return DEFAULT_STATES;
-          }
-
-          const states = data.geonames
-            .filter((state: GeoNamesState) => state.adminName1)
-            .map((state: GeoNamesState) => ({
-              geonameId: state.geonameId,
-              adminCode1: state.adminCode1,
-              adminName1: state.adminName1,
-              toponymName: state.toponymName,
-              displayName: state.adminName1 || state.toponymName,
-              value: state.adminName1 || state.toponymName
-            }));
-
-          if (!states.some(s => s.adminCode1 === DEFAULT_LOCATION.STATE_CODE)) {
-            states.unshift(DEFAULT_STATES[0]);
-          }
-
-          states.sort((a, b) => a.displayName.localeCompare(b.displayName));
-          return states;
-        } catch (error) {
-          console.error('Error fetching USA states:', error);
-          return DEFAULT_STATES;
-        }
-      }
-
-      const response = await makeApiRequest(
-        `${API_BASE_URL}/childrenJSON?geonameId=${geonameId}&username=${GEONAMES_USERNAME}`
-      );
-      
+      const response = await makeApiRequest('childrenJSON', { geonameId });
       const data = await response.json();
       
       if (!data?.geonames) {
-        return [];
+        return geonameId === DEFAULT_LOCATION.COUNTRY_ID ? DEFAULT_STATES : [];
       }
 
       const states = data.geonames
@@ -325,23 +273,31 @@ export const locationService = {
           value: state.adminName1 || state.toponymName
         }));
 
+      if (geonameId === DEFAULT_LOCATION.COUNTRY_ID && 
+          !states.some(s => s.adminCode1 === DEFAULT_LOCATION.STATE_CODE)) {
+        states.unshift(DEFAULT_STATES[0]);
+      }
+
       states.sort((a, b) => a.displayName.localeCompare(b.displayName));
       return states;
     } catch (error) {
       console.error('Error fetching states:', error);
       return geonameId === DEFAULT_LOCATION.COUNTRY_ID ? DEFAULT_STATES : [];
     }
-  },
+  }
 
-  getDefaultLocations(): { countryId: string; country: string; state: string } {
+  getDefaultLocations() {
     return {
       countryId: DEFAULT_LOCATION.COUNTRY_ID,
       country: DEFAULT_LOCATION.COUNTRY_NAME,
       state: DEFAULT_LOCATION.STATE
     };
-  },
+  }
 
   clearCache(): void {
-    LocationCache.getInstance().clear();
+    this.cache.clear();
   }
-};
+}
+
+// Export singleton instance
+export const locationService = new LocationService();
