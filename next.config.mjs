@@ -34,7 +34,7 @@ const nextConfig = {
     return [
       {
         source: '/api/geonames/:path*',
-        destination: 'http://api.geonames.org/:path*'
+        destination: 'http://secure.geonames.org/:path*'
       }
     ]
   }
