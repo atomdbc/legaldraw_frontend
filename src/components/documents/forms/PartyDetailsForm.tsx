@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { isValidEmail, formatPhone, isValidPhone } from "@/lib/utils/form";
 import { JURISDICTION_GROUPS } from '@/lib/config/jurisdictions';
 import { getJurisdictionById, createCustomJurisdiction } from '@/lib/config/jurisdictions';
+import { DEFAULT_LOCATION } from '@/lib/api/locationService';
 
 interface PartyDetailsFormProps {
   party: Party;
@@ -50,7 +51,6 @@ export function PartyDetailsForm({
   const [customJurisdiction, setCustomJurisdiction] = useState('');
   const initialSetupDone = useRef(false);
 
-  // Get location data
   const {
     locationState,
     updateLocation,
@@ -61,22 +61,9 @@ export function PartyDetailsForm({
     isInitialized
   } = useLocation({
     persistKey: party.id,
-    initialCountry: party.address?.country,
-    initialState: party.address?.state
+    initialCountry: party.address?.country || DEFAULT_LOCATION.COUNTRY_NAME,
+    initialState: party.address?.state || DEFAULT_LOCATION.STATE
   });
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Location State:', {
-      countries: countries?.length,
-      states: states?.length,
-      isLoadingCountries,
-      isLoadingStates,
-      isInitialized,
-      currentCountry: party.address?.country,
-      locationState
-    });
-  }, [countries, states, isLoadingCountries, isLoadingStates, isInitialized, party.address?.country, locationState]);
 
   // Memoized address update function
   const updateAddress = useCallback((updates: Partial<Party['address']>) => {
@@ -88,19 +75,29 @@ export function PartyDetailsForm({
     });
   }, [party.address, onUpdate]);
 
+  // Set USA as default if no country is selected
+  useEffect(() => {
+    if (isInitialized && !party.address?.country) {
+      updateAddress({
+        country: DEFAULT_LOCATION.COUNTRY_NAME,
+        state: DEFAULT_LOCATION.STATE
+      });
+    }
+  }, [isInitialized, party.address?.country, updateAddress]);
+
   // Handle initial location setup
   useEffect(() => {
     if (!initialSetupDone.current && isInitialized && countries?.length > 0) {
       const setupLocation = async () => {
-        if (party.address?.country) {
-          const country = countries.find(c => c.countryName === party.address.country);
-          if (country?.geonameId) {
-            await updateLocation({
-              country: country.countryName,
-              geonameId: String(country.geonameId),
-              state: party.address.state || ''
-            });
-          }
+        const countryToUse = party.address?.country || DEFAULT_LOCATION.COUNTRY_NAME;
+        const selectedCountry = countries.find(c => c.countryName === countryToUse);
+        
+        if (selectedCountry?.geonameId) {
+          await updateLocation({
+            country: selectedCountry.countryName,
+            geonameId: String(selectedCountry.geonameId),
+            state: party.address?.state || (countryToUse === DEFAULT_LOCATION.COUNTRY_NAME ? DEFAULT_LOCATION.STATE : '')
+          });
         }
       };
       
@@ -114,13 +111,13 @@ export function PartyDetailsForm({
     if (selectedCountry) {
       updateAddress({
         country: selectedCountry.countryName,
-        state: ''
+        state: countryName === DEFAULT_LOCATION.COUNTRY_NAME ? DEFAULT_LOCATION.STATE : ''
       });
 
       await updateLocation({
         country: selectedCountry.countryName,
         geonameId: String(selectedCountry.geonameId),
-        state: ''
+        state: countryName === DEFAULT_LOCATION.COUNTRY_NAME ? DEFAULT_LOCATION.STATE : ''
       });
     }
   };
@@ -406,12 +403,12 @@ export function PartyDetailsForm({
                 <div className="grid gap-2">
                   <Label>Country</Label>
                   <Select
-                    value={party.address?.country || ''}
+                    value={party.address?.country || DEFAULT_LOCATION.COUNTRY_NAME}
                     onValueChange={handleCountryChange}
                   >
                     <SelectTrigger className="h-[42px]">
-                      <SelectValue placeholder="Select country">
-                        {party.address?.country || "Select country"}
+                      <SelectValue>
+                        {party.address?.country || DEFAULT_LOCATION.COUNTRY_NAME}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -447,7 +444,9 @@ export function PartyDetailsForm({
                         onValueChange={handleStateChange}
                       >
                         <SelectTrigger className="h-[42px]">
-                          <SelectValue placeholder="Select state/province" />
+                          <SelectValue>
+                            {party.address?.state || "Select state/province"}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>

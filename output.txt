@@ -64,6 +64,7 @@
 │   │   │   └── GeistVF.woff
 │   │   ├── globals.css
 │   │   ├── layout.tsx
+│   │   ├── not-found.tsx
 │   │   ├── page.tsx
 │   │   ├── settings
 │   │   │   ├── QuickStats.tsx
@@ -242,4 +243,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-55 directories, 188 files
+55 directories, 189 files
