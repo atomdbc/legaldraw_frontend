@@ -35,12 +35,36 @@ interface CacheEntry {
 
 // Default values
 export const DEFAULT_LOCATION = {
-  COUNTRY_ID: '6252001', // USA geonameId
+  COUNTRY_ID: '6252001',
   COUNTRY_CODE: 'US',
   COUNTRY_NAME: 'United States',
   STATE: 'Delaware',
   STATE_CODE: 'DE'
 } as const;
+
+// Default countries list for fallback
+const DEFAULT_COUNTRIES: GeoLocation[] = [
+  {
+    geonameId: DEFAULT_LOCATION.COUNTRY_ID,
+    countryCode: DEFAULT_LOCATION.COUNTRY_CODE,
+    countryName: DEFAULT_LOCATION.COUNTRY_NAME,
+    toponymName: DEFAULT_LOCATION.COUNTRY_NAME,
+    displayName: DEFAULT_LOCATION.COUNTRY_NAME,
+    value: DEFAULT_LOCATION.COUNTRY_NAME
+  }
+];
+
+// Default states list for USA fallback
+const DEFAULT_STATES: GeoLocation[] = [
+  {
+    geonameId: '4142224',
+    adminCode1: 'DE',
+    adminName1: 'Delaware',
+    toponymName: 'Delaware',
+    displayName: 'Delaware',
+    value: 'Delaware'
+  }
+];
 
 // Cache implementation
 class LocationCache {
@@ -135,44 +159,100 @@ export const locationService = {
     if (cachedCountries) return cachedCountries;
 
     try {
+      if (!GEONAMES_USERNAME) {
+        console.warn('GEONAMES_USERNAME not configured, using default countries');
+        return DEFAULT_COUNTRIES;
+      }
+
       const response = await fetch(
         `${API_BASE_URL}/countryInfoJSON?username=${GEONAMES_USERNAME}`
       );
       
       if (!response.ok) {
-        throw new LocationServiceError('Failed to fetch countries', response.status);
+        console.warn('Failed to fetch countries, using defaults');
+        return DEFAULT_COUNTRIES;
       }
 
       const data = await response.json();
       
       if (!data?.geonames) {
-        throw new LocationServiceError('Invalid response format from GeoNames API');
+        return DEFAULT_COUNTRIES;
       }
 
-      const countries = data.geonames.map((country: GeoNamesCountry) => ({
-        geonameId: country.geonameId,
-        countryCode: country.countryCode,
-        countryName: country.countryName,
-        toponymName: country.countryName,
-        displayName: country.countryName,
-        value: country.countryName
-      }));
+      const countries = data.geonames
+        .map((country: GeoNamesCountry) => ({
+          geonameId: country.geonameId,
+          countryCode: country.countryCode,
+          countryName: country.countryName,
+          toponymName: country.countryName,
+          displayName: country.countryName,
+          value: country.countryName
+        }))
+        .filter(country => country.countryName && country.geonameId); // Filter out invalid entries
 
       // Sort countries alphabetically
       countries.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+      // Ensure USA is included
+      if (!countries.some(c => c.countryCode === DEFAULT_LOCATION.COUNTRY_CODE)) {
+        countries.unshift(DEFAULT_COUNTRIES[0]);
+      }
 
       cache.set('countries', countries);
       return countries;
     } catch (error) {
       console.error('Error fetching countries:', error);
-      return [];
+      return DEFAULT_COUNTRIES;
     }
   },
 
-
   async getStatesForCountry(geonameId: string): Promise<GeoLocation[]> {
-    // Don't use cache for states to ensure fresh data
     try {
+      // For USA, return states immediately if API fails
+      if (geonameId === DEFAULT_LOCATION.COUNTRY_ID) {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/childrenJSON?geonameId=${geonameId}&username=${GEONAMES_USERNAME}`
+          );
+          
+          if (!response.ok) {
+            return DEFAULT_STATES;
+          }
+
+          const data = await response.json();
+          
+          if (!data?.geonames) {
+            return DEFAULT_STATES;
+          }
+
+          const states = data.geonames
+            .filter((state: GeoNamesState) => state.adminName1) // Only include actual states
+            .map((state: GeoNamesState) => ({
+              geonameId: state.geonameId,
+              adminCode1: state.adminCode1,
+              adminName1: state.adminName1,
+              toponymName: state.toponymName,
+              displayName: state.adminName1 || state.toponymName,
+              value: state.adminName1 || state.toponymName
+            }));
+
+          // Ensure Delaware is included for USA
+          if (geonameId === DEFAULT_LOCATION.COUNTRY_ID && 
+              !states.some(s => s.adminCode1 === DEFAULT_LOCATION.STATE_CODE)) {
+            states.unshift(DEFAULT_STATES[0]);
+          }
+
+          // Simple alphabetical sort for all states
+          states.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+          return states;
+        } catch (error) {
+          console.error('Error fetching USA states:', error);
+          return DEFAULT_STATES;
+        }
+      }
+
+      // For other countries
       const response = await fetch(
         `${API_BASE_URL}/childrenJSON?geonameId=${geonameId}&username=${GEONAMES_USERNAME}`
       );
@@ -188,7 +268,7 @@ export const locationService = {
       }
 
       const states = data.geonames
-        .filter((state: GeoNamesState) => state.adminName1) // Only include actual states
+        .filter((state: GeoNamesState) => state.adminName1)
         .map((state: GeoNamesState) => ({
           geonameId: state.geonameId,
           adminCode1: state.adminCode1,
@@ -198,16 +278,13 @@ export const locationService = {
           value: state.adminName1 || state.toponymName
         }));
 
-      // Simple alphabetical sort for all states
       states.sort((a, b) => a.displayName.localeCompare(b.displayName));
-
       return states;
     } catch (error) {
       console.error('Error fetching states:', error);
       return [];
     }
   },
-
 
   getDefaultLocations(): { countryId: string; country: string; state: string } {
     return {
@@ -219,4 +296,5 @@ export const locationService = {
 
   clearCache(): void {
     LocationCache.getInstance().clear();
-  }}
+  }
+};
