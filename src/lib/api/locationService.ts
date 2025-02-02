@@ -175,23 +175,21 @@ async function makeApiRequest(endpoint: string, params: Record<string, string>) 
     username: GEONAMES_USERNAME || ''
   });
   
-  const url = `${API_BASE_URL}/${endpoint}?${searchParams.toString()}`;
-
   try {
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}/${endpoint}?${searchParams.toString()}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json'
-      }
+      },
+      next: { revalidate: 3600 }
     });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
     return response;
   } catch (error) {
-    console.error('API request failed:', error);
+    console.error('API request failed:', endpoint, error);
     throw error;
   }
 }
@@ -207,7 +205,7 @@ class LocationService {
   async getAllCountries(): Promise<GeoLocation[]> {
     const cachedCountries = this.cache.get('countries');
     if (cachedCountries) return cachedCountries;
-
+  
     try {
       if (!GEONAMES_USERNAME) {
         console.warn('GEONAMES_USERNAME not configured, using default countries');

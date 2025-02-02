@@ -11,7 +11,8 @@ const nextConfig = {
     return [
       {
         source: '/api/geonames/:path*',
-        destination: 'https://secure.geonames.org/:path*'
+        destination: 'https://secure.geonames.org/:path*',
+        basePath: false
       }
     ];
   },
