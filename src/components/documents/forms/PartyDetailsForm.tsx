@@ -279,98 +279,106 @@ export function PartyDetailsForm({
                 </div>
 
                 {/* Jurisdiction */}
-                <div className="grid gap-2">
-                  <Label className="flex items-center gap-2">
-                    Jurisdiction
-                    {errors.jurisdiction && (
-                      <span className="text-sm text-destructive">{errors.jurisdiction}</span>
-                    )}
-                  </Label>
-                  {showCustomJurisdiction ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={customJurisdiction}
-                        onChange={(e) => setCustomJurisdiction(e.target.value)}
-                        placeholder="Enter jurisdiction name"
-                        className={cn(errors.jurisdiction && "border-destructive")}
-                      />
-                      <Button onClick={() => {
-                        if (customJurisdiction.trim()) {
-                          const jurisdiction = createCustomJurisdiction(customJurisdiction);
-                          onUpdate({ jurisdiction: jurisdiction.id });
-                          setShowCustomJurisdiction(false);
-                          setCustomJurisdiction('');
-                        }
-                      }}>
-                        Add
-                      </Button>
-                      <Button variant="outline" onClick={() => setShowCustomJurisdiction(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Select
-                      value={party.jurisdiction || ''}
-                      onValueChange={(value) => {
-                        if (value === 'custom') {
-                          setShowCustomJurisdiction(true);
-                        } else {
-                          onUpdate({ jurisdiction: value });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-[42px]">
-                        <SelectValue placeholder="Select jurisdiction" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Popular Jurisdictions</SelectLabel>
-                          {JURISDICTION_GROUPS.popular.map(id => {
-                            const jurisdiction = getJurisdictionById(id);
-                            return jurisdiction && (
-                              <SelectItem key={id} value={id}>
-                                {jurisdiction.label}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectGroup>
-                        
-                        <SelectSeparator />
-                        
-                        <SelectGroup>
-                          <SelectLabel>International</SelectLabel>
-                          {JURISDICTION_GROUPS.international.map(id => {
-                            const jurisdiction = getJurisdictionById(id);
-                            return jurisdiction && (
-                              <SelectItem key={id} value={id}>
-                                {jurisdiction.label}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectGroup>
+<div className="grid gap-2">
+  <Label className="flex items-center gap-2">
+    Jurisdiction
+    {errors.jurisdiction && (
+      <span className="text-sm text-destructive">{errors.jurisdiction}</span>
+    )}
+  </Label>
+  {showCustomJurisdiction ? (
+    <div className="flex gap-2">
+      <Input
+        value={customJurisdiction}
+        onChange={(e) => setCustomJurisdiction(e.target.value)}
+        placeholder="Enter jurisdiction name"
+        className={cn(errors.jurisdiction && "border-destructive")}
+      />
+      <Button onClick={() => {
+        if (customJurisdiction.trim()) {
+          const jurisdiction = createCustomJurisdiction(customJurisdiction);
+          onUpdate({ jurisdiction: jurisdiction.id });
+          setShowCustomJurisdiction(false);
+          setCustomJurisdiction('');
+        }
+      }}>
+        Add
+      </Button>
+      <Button variant="outline" onClick={() => setShowCustomJurisdiction(false)}>
+        Cancel
+      </Button>
+    </div>
+  ) : (
+    <Select
+      value={party.jurisdiction || ''}
+      onValueChange={(value) => {
+        if (value === 'custom') {
+          setShowCustomJurisdiction(true);
+        } else {
+          onUpdate({ jurisdiction: value });
+        }
+      }}
+    >
+      <SelectTrigger className="h-[42px]">
+        <SelectValue placeholder="Select jurisdiction">
+          {party.jurisdiction ? getJurisdictionById(party.jurisdiction)?.label : "Select jurisdiction"}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {/* Popular Jurisdictions */}
+        <SelectGroup>
+          <SelectLabel>Popular Jurisdictions</SelectLabel>
+          {JURISDICTION_GROUPS.popular.map(id => {
+            const jurisdiction = getJurisdictionById(id);
+            return jurisdiction && (
+              <SelectItem key={id} value={id}>
+                {jurisdiction.label}
+              </SelectItem>
+            );
+          })}
+        </SelectGroup>
+        
+        <SelectSeparator />
+        
+        {/* International */}
+        <SelectGroup>
+          <SelectLabel>International</SelectLabel>
+          {JURISDICTION_GROUPS.international.map(id => {
+            const jurisdiction = getJurisdictionById(id);
+            return jurisdiction && (
+              <SelectItem key={id} value={id}>
+                {jurisdiction.label}
+              </SelectItem>
+            );
+          })}
+        </SelectGroup>
 
-                        {Object.entries(JURISDICTION_GROUPS)
-                          .filter(([group]) => !['popular', 'international'].includes(group))
-                          .map(([group, ids]) => (
-                            <SelectGroup key={group}>
-                              <SelectLabel>{group.replace(/([A-Z])/g, ' $1').trim()}</SelectLabel>
-                              {ids.map(id => {
-                                const jurisdiction = getJurisdictionById(id);
-                                return jurisdiction && (
-                                  <SelectItem key={id} value={id}>
-                                    {jurisdiction.label}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectGroup>
-                          ))}
+        {/* Other Jurisdiction Groups */}
+        {Object.entries(JURISDICTION_GROUPS)
+          .filter(([group]) => !['popular', 'international'].includes(group))
+          .map(([group, ids]) => (
+            <SelectGroup key={group}>
+              <SelectLabel className="capitalize">
+                {group.replace(/([A-Z])/g, ' $1').trim()}
+              </SelectLabel>
+              {ids.map(id => {
+                const jurisdiction = getJurisdictionById(id);
+                return jurisdiction && (
+                  <SelectItem key={id} value={id}>
+                    {jurisdiction.label}
+                  </SelectItem>
+                );
+              })}
+            </SelectGroup>
+          ))}
 
-                        <SelectSeparator />
-                        <SelectItem value="custom">+ Add Custom Jurisdiction</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
+        {/* Custom Option */}
+        <SelectSeparator />
+        <SelectItem value="custom">+ Add Custom Jurisdiction</SelectItem>
+      </SelectContent>
+    </Select>
+  )}
+</div>
 
                 {/* Phone */}
                 <div className="grid gap-2">
