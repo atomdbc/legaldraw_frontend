@@ -5,10 +5,11 @@ import { DOCUMENT_TYPES } from '@/lib/utils/documentTypes';
 
 const publicPaths = [
   '/',          // Landing page
-  '/login',     
+  '/login',    
   '/register',
   '/reset-password',
   '/logout',    // Add logout as a public path
+  // Add any other public paths here
 ];
 
 const authRequiredPaths = [
@@ -17,68 +18,8 @@ const authRequiredPaths = [
   '/settings'
 ];
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
-// Configure CSP based on environment
-const getCspDirectives = () => {
-  const directives = [
-    // Default - Only allow resources from same origin
-    "default-src 'self'",
-    
-    // Scripts - Allow inline and eval for development tools + CDN
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
-    
-    // Styles - Allow inline for shadcn/ui
-    "style-src 'self' 'unsafe-inline'",
-    
-    // Images - Allow data URIs, HTTPS, and blobs
-    "img-src 'self' data: https: blob:",
-    
-    // Fonts - Allow self and CDN
-    "font-src 'self' data: https://cdnjs.cloudflare.com",
-    
-    // Connect - Configure based on environment
-    `connect-src 'self' ${
-      isDevelopment 
-        ? 'http://localhost:3000 http://localhost:8000 ws://localhost:* wss://localhost:*' 
-        : 'https://legaldraw.com https://api.legaldraw.com'
-    } https://*.geonames.org https://secure.geonames.org`,
-    
-    // Frames - Prevent embedding
-    "frame-ancestors 'none'",
-    
-    // Forms - Only allow submissions to same origin
-    "form-action 'self'",
-    
-    // Base URI - Restrict to same origin
-    "base-uri 'self'",
-    
-    // Workers - Allow blob for web workers
-    "worker-src 'self' blob:",
-    
-    // Media - Restrict to same origin
-    "media-src 'self'",
-    
-    // Object/Embed - Prevent unauthorized plugins
-    "object-src 'none'"
-  ];
-
-  return directives.join('; ');
-};
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Force HTTPS in production
-  if (
-    process.env.NODE_ENV === 'production' &&
-    !request.headers.get('x-forwarded-proto')?.includes('https') &&
-    !pathname.startsWith('/_next') &&
-    !pathname.startsWith('/api')
-  ) {
-    const newUrl = `https://${request.headers.get('host')}${request.nextUrl.pathname}${request.nextUrl.search}`;
-    return NextResponse.redirect(newUrl, 301);
-  }
 
   // Allow public assets and API routes
   if (
@@ -92,6 +33,7 @@ export function middleware(request: NextRequest) {
   // Special handling for logout
   if (pathname === '/logout') {
     const response = NextResponse.redirect(new URL('/login', request.url));
+    // Clear auth cookies
     response.cookies.delete('accessToken');
     response.cookies.delete('refreshToken');
     return response;
@@ -119,7 +61,6 @@ export function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
       } catch (error) {
-        // If token is invalid, continue as normal
         return NextResponse.next();
       }
     }
@@ -144,20 +85,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Add security headers for all other routes
-  const response = NextResponse.next();
-  
-  // Security Headers
-  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-  // Content Security Policy
-  response.headers.set('Content-Security-Policy', getCspDirectives());
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
