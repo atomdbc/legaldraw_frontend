@@ -25,24 +25,35 @@ interface DocumentWizardProps {
 }
 
 export function DocumentWizard(props: DocumentWizardProps) {
-  const { children, currentStepIndex, onNext, onBack, allowNext = true, isSaving = false } = props;
+  const { 
+    children, 
+    currentStepIndex, 
+    onNext, 
+    onBack, 
+    allowNext = true, 
+    isSaving = false 
+  } = props;
+  
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const isLastStep = currentStepIndex === wizardSteps.length - 1;
-  const isDisabled = !allowNext || isProcessing || isSaving;
+  // Changed condition to be more explicit
+  const isDisabled = (!allowNext && currentStepIndex !== 0) || isProcessing || isSaving;
 
   const handleNavigateNext = async () => {
     if (isProcessing || !allowNext || !onNext) return;
-    setIsProcessing(true);
-
+    
     try {
+      setIsProcessing(true);
       const shouldProceed = await onNext();
+      
       if (shouldProceed && isLastStep) {
         router.push('/documents');
         return;
       }
+      
       if (!shouldProceed) {
         setIsProcessing(false);
       }
@@ -52,7 +63,6 @@ export function DocumentWizard(props: DocumentWizardProps) {
         variant: "destructive",
         description: "Failed to proceed. Please try again."
       });
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -86,7 +96,9 @@ export function DocumentWizard(props: DocumentWizardProps) {
                         </div>
                         <div className="hidden md:block flex-1">
                           <div className="text-sm font-medium">{step.title}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">{step.description}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {step.description}
+                          </div>
                         </div>
                         {index < wizardSteps.length - 1 && (
                           <div className="flex-1 hidden md:block">
@@ -139,7 +151,7 @@ export function DocumentWizard(props: DocumentWizardProps) {
               ) : (
                 <>
                   {isLastStep ? (
-                    <>Finish</>
+                    "Finish"
                   ) : (
                     <>
                       Continue

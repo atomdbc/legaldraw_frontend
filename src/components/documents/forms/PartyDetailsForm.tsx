@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Party, PartyType, PARTY_TYPES, ValidationErrors } from "@/types/party";
+import { Party, PartyType, PARTY_TYPES } from "@/types/party";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,20 +32,61 @@ import { JURISDICTION_GROUPS } from '@/lib/config/jurisdictions';
 import { getJurisdictionById, createCustomJurisdiction } from '@/lib/config/jurisdictions';
 import { DEFAULT_LOCATION } from '@/lib/api/locationService';
 
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
 interface PartyDetailsFormProps {
   party: Party;
   onUpdate: (updates: Partial<Party>) => void;
   onRemove: () => void;
   canRemove: boolean;
-  errors: ValidationErrors;
+  validationErrors: ValidationError[];
+  touchedFields: Set<string>;
+  onFieldTouch: (field: string) => void;
 }
+
+// Field label component for consistent label rendering
+const FieldLabel = ({ 
+  label, 
+  field, 
+  required = true,
+  error,
+  touched
+}: { 
+  label: string;
+  field: string;
+  required?: boolean;
+  error?: string;
+  touched?: boolean;
+}) => (
+  <div className="flex flex-wrap items-center gap-2">
+    <Label>{label}</Label>
+    {required ? (
+      <Badge 
+        variant={error && touched ? "destructive" : "secondary"}
+        className="font-normal"
+      >
+        Required
+      </Badge>
+    ) : (
+      <Badge variant="secondary" className="font-normal">Optional</Badge>
+    )}
+    {error && touched && (
+      <span className="text-sm text-destructive">{error}</span>
+    )}
+  </div>
+);
 
 export function PartyDetailsForm({
   party,
   onUpdate,
   onRemove,
   canRemove,
-  errors
+  validationErrors,
+  touchedFields,
+  onFieldTouch
 }: PartyDetailsFormProps) {
   const [showCustomJurisdiction, setShowCustomJurisdiction] = useState(false);
   const [customJurisdiction, setCustomJurisdiction] = useState('');
@@ -65,6 +106,19 @@ export function PartyDetailsForm({
     initialState: party.address?.state || DEFAULT_LOCATION.STATE
   });
 
+  const getFieldError = (field: string): string | undefined => {
+    const error = validationErrors.find(err => err.field === field);
+    return error?.message;
+  };
+
+  const isFieldTouched = (field: string): boolean => {
+    return touchedFields.has(`${party.id}-${field}`);
+  };
+
+  const handleFieldBlur = (field: string) => {
+    onFieldTouch(`${party.id}-${field}`);
+  };
+
   // Memoized address update function
   const updateAddress = useCallback((updates: Partial<Party['address']>) => {
     onUpdate({
@@ -75,7 +129,7 @@ export function PartyDetailsForm({
     });
   }, [party.address, onUpdate]);
 
-  // Set USA as default if no country is selected
+  // Country/State handling useEffects...
   useEffect(() => {
     if (isInitialized && !party.address?.country) {
       updateAddress({
@@ -85,7 +139,6 @@ export function PartyDetailsForm({
     }
   }, [isInitialized, party.address?.country, updateAddress]);
 
-  // Handle initial location setup
   useEffect(() => {
     if (!initialSetupDone.current && isInitialized && countries?.length > 0) {
       const setupLocation = async () => {
@@ -119,12 +172,15 @@ export function PartyDetailsForm({
         geonameId: String(selectedCountry.geonameId),
         state: countryName === DEFAULT_LOCATION.COUNTRY_NAME ? DEFAULT_LOCATION.STATE : ''
       });
+      
+      handleFieldBlur('address.country');
     }
   };
 
   const handleStateChange = (stateName: string) => {
     updateAddress({ state: stateName });
     updateLocation({ state: stateName });
+    handleFieldBlur('address.state');
   };
 
   if (!isInitialized || isLoadingCountries) {
@@ -169,17 +225,27 @@ export function PartyDetailsForm({
             <div className="grid gap-6">
               {/* Party Type */}
               <div className="grid gap-2">
-                <Label className="flex items-center gap-2">
-                  Party Type
-                  {errors.type && (
-                    <span className="text-sm text-destructive">{errors.type}</span>
-                  )}
-                </Label>
+                <FieldLabel 
+                  label="Party Type"
+                  field="type"
+                  error={getFieldError('type')}
+                  touched={isFieldTouched('type')}
+                />
                 <Select
                   defaultValue={party.type}
-                  onValueChange={(value) => onUpdate({ type: value as PartyType })}
+                  onValueChange={(value) => {
+                    onUpdate({ type: value as PartyType });
+                    handleFieldBlur('type');
+                  }}
                 >
-                  <SelectTrigger className="h-[60px]">
+                  <SelectTrigger 
+                    className={cn(
+                      "h-[60px]",
+                      getFieldError('type') && 
+                      isFieldTouched('type') && 
+                      "border-destructive"
+                    )}
+                  >
                     <SelectValue placeholder="Select party type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -213,12 +279,12 @@ export function PartyDetailsForm({
 
               {/* Name */}
               <div className="grid gap-2">
-                <Label className="flex items-center gap-2">
-                  Name
-                  {errors.name && (
-                    <span className="text-sm text-destructive">{errors.name}</span>
-                  )}
-                </Label>
+                <FieldLabel 
+                  label="Name"
+                  field="name"
+                  error={getFieldError('name')}
+                  touched={isFieldTouched('name')}
+                />
                 <div className="relative">
                   <Input
                     placeholder={party.type === 'individual' ? 
@@ -226,7 +292,12 @@ export function PartyDetailsForm({
                     }
                     value={party.name}
                     onChange={(e) => onUpdate({ name: e.target.value })}
-                    className={cn(errors.name && "border-destructive")}
+                    onBlur={() => handleFieldBlur('name')}
+                    className={cn(
+                      getFieldError('name') && 
+                      isFieldTouched('name') && 
+                      "border-destructive"
+                    )}
                   />
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -260,132 +331,38 @@ export function PartyDetailsForm({
 
                 {/* Email */}
                 <div className="grid gap-2">
-                  <Label>Email Address</Label>
+                  <FieldLabel 
+                    label="Email Address"
+                    field="email"
+                    error={getFieldError('email')}
+                    touched={isFieldTouched('email')}
+                  />
                   <div className="relative">
                     <Input
                       type="email"
                       placeholder="Enter email address"
                       value={party.email}
                       onChange={(e) => onUpdate({ email: e.target.value })}
-                      className={cn(errors.email && "border-destructive")}
+                      onBlur={() => handleFieldBlur('email')}
+                      className={cn(
+                        getFieldError('email') && 
+                        isFieldTouched('email') && 
+                        "border-destructive"
+                      )}
                     />
                     {party.email && isValidEmail(party.email) && (
                       <div className="absolute right-3 top-2.5 text-green-500">✓</div>
                     )}
                   </div>
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email}</p>
-                  )}
                 </div>
-
-                {/* Jurisdiction */}
-<div className="grid gap-2">
-  <Label className="flex items-center gap-2">
-    Jurisdiction
-    {errors.jurisdiction && (
-      <span className="text-sm text-destructive">{errors.jurisdiction}</span>
-    )}
-  </Label>
-  {showCustomJurisdiction ? (
-    <div className="flex gap-2">
-      <Input
-        value={customJurisdiction}
-        onChange={(e) => setCustomJurisdiction(e.target.value)}
-        placeholder="Enter jurisdiction name"
-        className={cn(errors.jurisdiction && "border-destructive")}
-      />
-      <Button onClick={() => {
-        if (customJurisdiction.trim()) {
-          const jurisdiction = createCustomJurisdiction(customJurisdiction);
-          onUpdate({ jurisdiction: jurisdiction.id });
-          setShowCustomJurisdiction(false);
-          setCustomJurisdiction('');
-        }
-      }}>
-        Add
-      </Button>
-      <Button variant="outline" onClick={() => setShowCustomJurisdiction(false)}>
-        Cancel
-      </Button>
-    </div>
-  ) : (
-    <Select
-      value={party.jurisdiction || ''}
-      onValueChange={(value) => {
-        if (value === 'custom') {
-          setShowCustomJurisdiction(true);
-        } else {
-          onUpdate({ jurisdiction: value });
-        }
-      }}
-    >
-      <SelectTrigger className="h-[42px]">
-        <SelectValue placeholder="Select jurisdiction">
-          {party.jurisdiction ? getJurisdictionById(party.jurisdiction)?.label : "Select jurisdiction"}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {/* Popular Jurisdictions */}
-        <SelectGroup>
-          <SelectLabel>Popular Jurisdictions</SelectLabel>
-          {JURISDICTION_GROUPS.popular.map(id => {
-            const jurisdiction = getJurisdictionById(id);
-            return jurisdiction && (
-              <SelectItem key={id} value={id}>
-                {jurisdiction.label}
-              </SelectItem>
-            );
-          })}
-        </SelectGroup>
-        
-        <SelectSeparator />
-        
-        {/* International */}
-        <SelectGroup>
-          <SelectLabel>International</SelectLabel>
-          {JURISDICTION_GROUPS.international.map(id => {
-            const jurisdiction = getJurisdictionById(id);
-            return jurisdiction && (
-              <SelectItem key={id} value={id}>
-                {jurisdiction.label}
-              </SelectItem>
-            );
-          })}
-        </SelectGroup>
-
-        {/* Other Jurisdiction Groups */}
-        {Object.entries(JURISDICTION_GROUPS)
-          .filter(([group]) => !['popular', 'international'].includes(group))
-          .map(([group, ids]) => (
-            <SelectGroup key={group}>
-              <SelectLabel className="capitalize">
-                {group.replace(/([A-Z])/g, ' $1').trim()}
-              </SelectLabel>
-              {ids.map(id => {
-                const jurisdiction = getJurisdictionById(id);
-                return jurisdiction && (
-                  <SelectItem key={id} value={id}>
-                    {jurisdiction.label}
-                  </SelectItem>
-                );
-              })}
-            </SelectGroup>
-          ))}
-
-        {/* Custom Option */}
-        <SelectSeparator />
-        <SelectItem value="custom">+ Add Custom Jurisdiction</SelectItem>
-      </SelectContent>
-    </Select>
-  )}
-</div>
 
                 {/* Phone */}
                 <div className="grid gap-2">
-                  <Label className="flex items-center gap-2">
-                    Phone
-                    <Badge variant="secondary" className="font-normal">Optional</Badge>
-                  </Label>
+                  <FieldLabel 
+                    label="Phone"
+                    field="phone"
+                    required={false}
+                  />
                   <div className="relative">
                     <Input
                       type="tel"
@@ -409,12 +386,22 @@ export function PartyDetailsForm({
 
                 {/* Country */}
                 <div className="grid gap-2">
-                  <Label>Country</Label>
+                  <FieldLabel 
+                    label="Country"
+                    field="address.country"
+                    error={getFieldError('address.country')}
+                    touched={isFieldTouched('address.country')}
+                  />
                   <Select
                     value={party.address?.country || DEFAULT_LOCATION.COUNTRY_NAME}
                     onValueChange={handleCountryChange}
                   >
-                    <SelectTrigger className="h-[42px]">
+                    <SelectTrigger className={cn(
+                      "h-[42px]",
+                      getFieldError('address.country') && 
+                      isFieldTouched('address.country') && 
+                      "border-destructive"
+                    )}>
                       <SelectValue>
                         {party.address?.country || DEFAULT_LOCATION.COUNTRY_NAME}
                       </SelectValue>
@@ -443,7 +430,13 @@ export function PartyDetailsForm({
                 {/* State/Province */}
                 {party.address?.country && (
                   <div className="grid gap-2">
-                    <Label>State/Province</Label>
+                    <FieldLabel 
+                      label="State/Province"
+                      field="address.state"
+                      error={getFieldError('address.state')}
+                      touched={isFieldTouched('address.state')}
+                      required={false}
+                    />
                     {isLoadingStates ? (
                       <Skeleton className="h-[42px] w-full" />
                     ) : (
@@ -482,44 +475,58 @@ export function PartyDetailsForm({
                 {/* City and Postal Code */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>City</Label>
+                    <FieldLabel 
+                      label="City"
+                      field="address.city"
+                      error={getFieldError('address.city')}
+                      touched={isFieldTouched('address.city')}
+                    />
                     <Input
                       placeholder="Enter city"
                       value={party.address?.city || ''}
                       onChange={(e) => updateAddress({ city: e.target.value })}
-                      className={cn(errors['address.city'] && "border-destructive")}
+                      onBlur={() => handleFieldBlur('address.city')}
+                      className={cn(
+                        getFieldError('address.city') && 
+                        isFieldTouched('address.city') && 
+                        "border-destructive"
+                      )}
                     />
-                    {errors['address.city'] && (
-                      <p className="text-sm text-destructive">{errors['address.city']}</p>
-                    )}
                   </div>
 
                   <div className="grid gap-2">
-                    <Label>Postal Code</Label>
+                    <FieldLabel 
+                      label="Postal Code"
+                      field="address.postalCode"
+                      required={false}
+                    />
                     <Input
                       placeholder="Enter postal code"
                       value={party.address?.postalCode || ''}
                       onChange={(e) => updateAddress({ postalCode: e.target.value })}
-                      className={cn(errors['address.postalCode'] && "border-destructive")}
                     />
-                    {errors['address.postalCode'] && (
-                      <p className="text-sm text-destructive">{errors['address.postalCode']}</p>
-                    )}
                   </div>
                 </div>
 
                 {/* Street Address */}
                 <div className="grid gap-2">
-                  <Label>Street Address</Label>
+                  <FieldLabel 
+                    label="Street Address"
+                    field="address.street"
+                    error={getFieldError('address.street')}
+                    touched={isFieldTouched('address.street')}
+                  />
                   <Input
                     placeholder="Enter street address"
                     value={party.address?.street || ''}
                     onChange={(e) => updateAddress({ street: e.target.value })}
-                    className={cn(errors['address.street'] && "border-destructive")}
+                    onBlur={() => handleFieldBlur('address.street')}
+                    className={cn(
+                      getFieldError('address.street') && 
+                      isFieldTouched('address.street') && 
+                      "border-destructive"
+                    )}
                   />
-                  {errors['address.street'] && (
-                    <p className="text-sm text-destructive">{errors['address.street']}</p>
-                  )}
                 </div>
               </div>
             </div>

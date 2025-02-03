@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
       targetUrl.searchParams.append(key, value);
     });
 
-    console.log('Proxying request to:', targetUrl.toString());
 
     const response = await fetch(targetUrl.toString(), {
       headers: {

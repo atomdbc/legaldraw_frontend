@@ -25,17 +25,55 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
   const [isValid, setIsValid] = useState(false);
   const { data, updateProgress } = useDocumentProgress();
   const { navigateNext, navigateBack } = useWizardNavigation(documentType);
-  const [parties, setParties] = useState<Party[]>([{ ...INITIAL_PARTY, id: initialPartyId }]);
+  const [parties, setParties] = useState<Party[]>([{
+    ...INITIAL_PARTY,
+    id: initialPartyId
+  }]);
   const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
 
+  // Helper function to process party data
+  const processPartyData = useCallback((party: Party) => {
+    return {
+      ...party,
+      type: party.type || 'individual',
+      address: {
+        ...party.address,
+        zipCode: party.address?.postalCode || party.address?.zipCode || '',
+        street: party.address?.street || '',
+        city: party.address?.city || '',
+        state: party.address?.state || '',
+        country: party.address?.country || ''
+      }
+    };
+  }, []);
+
+  // Main validation function
+  const validateAndUpdateStatus = useCallback((currentParties: Party[]) => {
+    // Process all parties
+    const processedParties = currentParties.map(processPartyData);
+
+    // Run validation
+    const errors = validateParties(processedParties);
+    const hasErrors = Object.keys(errors).length > 0;
+    const hasEnoughParties = processedParties.length >= 2;
+    const isValidForm = !hasErrors && hasEnoughParties;
+
+    setValidationErrors(errors);
+    setIsValid(isValidForm);
+    return isValidForm;
+  }, [processPartyData]);
+
+  // Load initial data
   useEffect(() => {
     if (data?.data?.parties && data.data.parties.length > 0) {
-      setParties(data.data.parties);
-      const errors = validateParties(data.data.parties);
-      setIsValid(Object.keys(errors).length === 0 && data.data.parties.length >= 2);
+      const processedParties = data.data.parties.map(processPartyData);
+      setParties(processedParties);
+      validateAndUpdateStatus(processedParties);
     }
-  }, [data]);
+  }, [data, processPartyData, validateAndUpdateStatus]);
 
+  // Save progress
   const saveProgress = useCallback(async (currentParties: Party[]): Promise<boolean> => {
     try {
       await updateProgress({
@@ -58,37 +96,39 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
     }
   }, [documentType, data?.data, updateProgress, toast]);
 
+  // Handle parties changes
   const handlePartiesChange = useCallback(async (newParties: Party[]) => {
-    setParties(newParties);
-    
-    const errors = validateParties(newParties);
-    const isValidNow = Object.keys(errors).length === 0 && newParties.length >= 2;
-    setIsValid(isValidNow);
-    
-    await saveProgress(newParties);
-  }, [saveProgress]);
+    const processedParties = newParties.map(processPartyData);
+    setParties(processedParties);
+    validateAndUpdateStatus(processedParties);
+    await saveProgress(processedParties);
+  }, [saveProgress, validateAndUpdateStatus, processPartyData]);
 
+  // Handle next button click
   const handleNext = async () => {
     if (isSaving) return false;
     setIsSaving(true);
 
     try {
-      const errors = validateParties(parties);
-      const isValidNow = Object.keys(errors).length === 0 && parties.length >= 2;
+      const processedParties = parties.map(processPartyData);
+      const isValidNow = validateAndUpdateStatus(processedParties);
 
       if (!isValidNow) {
+        const errorMessages = Object.values(validationErrors)
+          .map(error => error.message)
+          .filter(Boolean)
+          .join(', ');
+
         toast({
           variant: "destructive",
           title: "Invalid Party Information",
-          description: "Please fix the errors before proceeding."
+          description: errorMessages || "Please fix all validation errors before proceeding."
         });
         return false;
       }
 
-      const saved = await saveProgress(parties);
-      if (!saved) {
-        return false;
-      }
+      const saved = await saveProgress(processedParties);
+      if (!saved) return false;
 
       const nextRoute = await navigateNext('parties');
       if (nextRoute) {
@@ -102,7 +142,7 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save progress."
+        description: "Failed to save progress. Please try again."
       });
       return false;
     } finally {
@@ -110,12 +150,20 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
     }
   };
 
+  // Handle back button click
   const handleBack = () => {
     const prevRoute = navigateBack('parties');
     if (prevRoute) {
       router.push(prevRoute);
     }
   };
+
+  // Get validation errors summary
+  const getErrorSummary = useCallback(() => {
+    return Object.values(validationErrors)
+      .map(error => error.message)
+      .filter(Boolean);
+  }, [validationErrors]);
 
   return (
     <DocumentWizard
@@ -145,8 +193,23 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
           <PartyForm
             parties={parties}
             onChange={handlePartiesChange}
+            validationErrors={validationErrors}
           />
         </Card>
+
+        {Object.keys(validationErrors).length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Validation Errors</AlertTitle>
+            <AlertDescription>
+              <ul className="list-disc pl-4">
+                {getErrorSummary().map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {parties.length < 2 && (
           <Alert variant="warning">
