@@ -7,6 +7,11 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   poweredByHeader: false,
+  productionBrowserSourceMaps: true,
+  reactStrictMode: true,
+  experimental: {
+    serverActions: true
+  },
   async headers() {
     return [
       {

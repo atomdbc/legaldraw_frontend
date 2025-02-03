@@ -1,34 +1,36 @@
+// src/app/documents/create/[type]/parties/page.tsx
 import { PartyInformationClient } from './PartyInformationClient';
 import { isValidDocumentType } from '@/lib/utils/documentTypes';
 import { notFound } from 'next/navigation';
-import { Metadata } from 'next';
 import crypto from 'crypto';
 
-type Props = {
-  params: Promise<{ type: string }>;
-  searchParams: { [key: string]: string | string[] | undefined };
-};
+interface PageProps {
+  params: { type: string };
+}
 
-export async function generateMetadata(
-  { params }: Props
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ type: string }>;
+}) {
   const resolvedParams = await params;
-  const documentType = resolvedParams.type;
-  
-  if (!documentType || !isValidDocumentType(documentType)) {
+  if (!resolvedParams.type || !isValidDocumentType(resolvedParams.type)) {
     return {
       title: 'Invalid Document Type',
     };
   }
   
   return {
-    title: `${documentType.toUpperCase()} - Party Information`,
+    title: `${resolvedParams.type.toUpperCase()} - Party Information`,
   };
 }
 
-export default async function PartyInformationPage({ 
-  params 
-}: Props) {
+export default async function PartyInformationPage({
+  params,
+}: {
+  params: Promise<{ type: string }>;
+}) {
+  // Await the params promise
   const resolvedParams = await params;
   const documentType = resolvedParams.type;
 
@@ -37,7 +39,6 @@ export default async function PartyInformationPage({
     notFound();
   }
 
-  // Generate a unique ID for the initial party
   const initialPartyId = crypto.randomUUID();
 
   return (
