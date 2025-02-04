@@ -121,9 +121,9 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">Welcome back</h2>
-            <p className="text-zinc-500">Please enter your credentials to continue</p>
-          </div>
+  <h2 className="text-2xl font-semibold">Log in to LegalDraw AI</h2>
+  <p className="text-zinc-500">Sign in to access your legal workspace and continue drafting documents</p>
+</div>
 
           <LoginForm />
         </div>
