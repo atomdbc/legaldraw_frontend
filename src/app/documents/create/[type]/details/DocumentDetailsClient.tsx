@@ -5,29 +5,29 @@ import { useRouter } from 'next/navigation';
 import { DocumentWizard } from "@/components/documents/wizard/DocumentWizard";
 import { DocumentVariables } from "@/components/documents/wizard/DocumentVariables";
 import { DocumentReviewModal } from "@/components/documents/wizard/DocumentReviewModal";
-import { DocumentSettings } from "@/components/documents/wizard/DocumentSettings"; // New component
+import { DocumentSettings } from "@/components/documents/wizard/DocumentSettings";
 import { useToast } from "@/hooks/use-toast";
 import { useDocumentProgress } from "@/hooks/useDocumentProgress";
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DOCUMENT_TYPES } from '@/lib/utils/documentTypes';
 import { DocumentVariables as Variables } from "@/types/document";
 import { Dialog } from '@radix-ui/react-dialog';
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Pencil, Settings2, AlertCircle, Loader2 } from "lucide-react";
 
 interface DocumentDetailsClientProps {
   initialType: string;
 }
 
-// Default document settings
-const getDefaultSettings = (documentType: string) => ({
+const defaultSettings = (type: string) => ({
   cover_page: {
     enabled: true,
-    watermark: documentType === 'service' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL',
+    watermark: type === 'service' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL',
     logo_enabled: false
   },
   header_footer: {
     enabled: true,
-    header_text: documentType === 'service' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL & PROPRIETARY',
+    header_text: type === 'service' ? 'SERVICE AGREEMENT' : 'CONFIDENTIAL & PROPRIETARY',
     footer_text: 'Page {page_number} of {total_pages}'
   },
   styling: {
@@ -45,61 +45,44 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
   const [isLoading, setIsLoading] = useState(true);
   const [isValid, setIsValid] = useState(false);
   const [variables, setVariables] = useState<Partial<Variables>>({});
-  const [documentSettings, setDocumentSettings] = useState(getDefaultSettings(initialType));
-  const [hasParties, setHasParties] = useState(false);
+  const [settings, setSettings] = useState(defaultSettings(initialType));
   const [isSaving, setIsSaving] = useState(false);
   const [showReview, setShowReview] = useState(false);
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeView, setActiveView] = useState<'details' | 'settings'>('details');
 
+  // Load and validate initial data
   useEffect(() => {
-    const loadInitialData = async () => {
+    async function loadData() {
       if (!DOCUMENT_TYPES.includes(initialType as any)) {
         router.push('/documents/create');
         return;
       }
 
       if (!progressData) return;
-      
-      const validParties = progressData.data?.parties && 
-                          progressData.data.parties.length >= 2 && 
-                          progressData.data.parties.every(party => 
-                            party.name && party.type && party.address);
 
-      if (!validParties) {
+      const hasValidParties = progressData.data?.parties?.length >= 2 && 
+                            progressData.data.parties.every(p => 
+                              p.name && p.type && p.address);
+
+      if (!hasValidParties) {
         router.push(`/documents/create/${initialType}/parties`);
         return;
       }
 
-      setHasParties(!!validParties);
-
       if (progressData.data?.variables) {
         setVariables(progressData.data.variables);
       }
-
-      // Load saved settings if they exist
       if (progressData.data?.settings) {
-        setDocumentSettings(progressData.data.settings);
+        setSettings(progressData.data.settings);
       }
-      
-      setIsLoading(false);
-    };
 
-    loadInitialData();
+      setIsLoading(false);
+    }
+
+    loadData();
   }, [progressData, initialType, router]);
 
-  const handleVariablesChange = (newVariables: Partial<Variables>) => {
-    setVariables(newVariables);
-  };
-
-  const handleSettingsChange = (newSettings: any) => {
-    setDocumentSettings(newSettings);
-  };
-
-  const handleValidationChange = (validationState: boolean) => {
-    setIsValid(validationState);
-  };
-
-  const handleNext = async () => {
+  const handleSave = async () => {
     if (isSaving || !isValid) return false;
 
     setIsSaving(true);
@@ -110,29 +93,27 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
         data: {
           ...progressData?.data,
           variables,
-          settings: documentSettings // Save settings with progress
+          settings
         }
       });
-      
       setShowReview(true);
-      return false;
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to save document details."
+        title: "Save Failed",
+        description: "Changes couldn't be saved. Please try again."
       });
-      return false;
     } finally {
       setIsSaving(false);
     }
+    return false;
   };
 
   if (isLoading) {
     return (
       <DocumentWizard currentStepIndex={2} documentType={initialType} allowNext={false}>
-        <div className="flex items-center justify-center min-h-[600px]">
-          <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
+        <div className="flex items-center justify-center h-[500px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       </DocumentWizard>
     );
@@ -142,47 +123,70 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
     <>
       <DocumentWizard
         currentStepIndex={2}
-        onNext={handleNext}
+        onNext={handleSave}
         onBack={() => router.push(`/documents/create/${initialType}/parties`)}
         allowNext={isValid && !isSaving}
         isSaving={isSaving}
         documentType={initialType}
       >
-        <div className="space-y-6 p-6">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Document Configuration</h2>
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              Configure your {initialType.toUpperCase()} document details and appearance.
-            </p>
+        <div>
+          {/* Header Section */}
+          <div className="bg-card p-6 space-y-6 border-b">
+            <div>
+              <h2 className="text-2xl font-semibold">Document Details</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure the content and appearance of your {initialType.toUpperCase()}.
+              </p>
+            </div>
+
+            {/* Section Navigation */}
+            <div className="flex gap-4">
+              <Button
+                variant={activeView === 'details' ? 'default' : 'outline'}
+                onClick={() => setActiveView('details')}
+                className="flex-1"
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Document Content
+              </Button>
+              <Button
+                variant={activeView === 'settings' ? 'default' : 'outline'}
+                onClick={() => setActiveView('settings')}
+                className="flex-1"
+              >
+                <Settings2 className="h-4 w-4 mr-2" />
+                Appearance Settings
+              </Button>
+            </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="details">Document Details</TabsTrigger>
-              <TabsTrigger value="appearance">Appearance & Settings</TabsTrigger>
-            </TabsList>
+          {/* Main Content */}
+          <div className="p-6">
+            {activeView === 'details' ? (
+              <DocumentVariables
+                documentType={initialType}
+                variables={variables}
+                onChange={setVariables}
+                onValidationChange={setIsValid}
+              />
+            ) : (
+              <DocumentSettings
+                documentType={initialType}
+                settings={settings}
+                onChange={setSettings}
+              />
+            )}
 
-            <TabsContent value="details">
-              <Card className="pt-6 overflow-hidden">
-                <DocumentVariables
-                  documentType={initialType}
-                  variables={variables}
-                  onChange={handleVariablesChange}
-                  onValidationChange={handleValidationChange}
-                />
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="appearance">
-              <Card className="pt-6 overflow-hidden">
-                <DocumentSettings
-                  documentType={initialType}
-                  settings={documentSettings}
-                  onChange={handleSettingsChange}
-                />
-              </Card>
-            </TabsContent>
-          </Tabs>
+            {/* Validation Message */}
+            {!isValid && activeView === 'details' && (
+              <Alert className="mt-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Fill in all required fields to proceed to document review.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         </div>
       </DocumentWizard>
 
@@ -193,8 +197,8 @@ export function DocumentDetailsClient({ initialType }: DocumentDetailsClientProp
           documentType={initialType as any}
           documentData={{
             parties: progressData?.data?.parties || [],
-            variables: variables,
-            settings: documentSettings // Pass settings to review modal
+            variables,
+            settings
           }}
           isLoading={isSaving}
         />

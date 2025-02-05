@@ -4,85 +4,86 @@
 
 @layer base {
   :root {
-    /* Core colors - Black and White theme */
+    /* Core colors - Modernized Black and White theme */
     --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --foreground: 240 10% 3.9%;
     
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 240 10% 3.9%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 240 10% 3.9%;
     
-    /* Monochromatic primary */
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
+    /* Refined primary colors */
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
     
-    /* Refined grays for better hierarchy */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 0%;
+    /* Enhanced secondary colors */
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
     
-    /* Muted grays with better contrast */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    /* Sophisticated muted tones */
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
     
-    /* Accent with slight sophistication */
-    --accent: 0 0% 94%;
-    --accent-foreground: 0 0% 0%;
+    /* Subtle accent colors */
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     
-    /* Destructive with better accessibility */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    /* Refined destructive colors */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
     
-    /* Refined borders and inputs */
-    --border: 0 0% 85%;
-    --input: 0 0% 95%;
-    --ring: 0 0% 0%;
+    /* Border and input refinements */
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+
+    /* Success colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
     
-    /* Chart colors with better distinction */
-    --chart-1: 0 0% 0%;
-    --chart-2: 0 0% 25%;
-    --chart-3: 0 0% 45%;
-    --chart-4: 0 0% 65%;
-    --chart-5: 0 0% 85%;
+    /* Warning colors */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
     
     --radius: 0.5rem;
   }
-  
+
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
     
-    --card: 0 0% 2%;
-    --card-foreground: 0 0% 100%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
     
-    --popover: 0 0% 3%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
     
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
     
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
     
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 70%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
     
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
     
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 0 0% 98%;
     
-    --border: 0 0% 18%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 100%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
     
-    --chart-1: 0 0% 100%;
-    --chart-2: 0 0% 85%;
-    --chart-3: 0 0% 65%;
-    --chart-4: 0 0% 45%;
-    --chart-5: 0 0% 25%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
   }
 }
 
@@ -95,136 +96,179 @@
     @apply bg-background text-foreground antialiased;
   }
 
-  /* Enhanced Form Fields */
-  input, textarea, select {
-    @apply transition-colors duration-200;
+  /* Enhanced Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
   }
 
-  /* Input Styles */
-  .input {
-    @apply bg-input border border-input rounded-md px-3 py-2
-           focus:outline-none focus:ring-1 focus:ring-ring
-           disabled:opacity-50 disabled:cursor-not-allowed
-           placeholder:text-muted-foreground;
-  }
-
-  /* Label Styles */
-  label {
-    @apply text-sm font-medium text-foreground mb-1.5 block;
-  }
+  h1 { @apply text-3xl mb-4; }
+  h2 { @apply text-2xl mb-3; }
+  h3 { @apply text-xl mb-2; }
 }
 
-/* Form Component Enhancements */
 @layer components {
-  /* Form Groups with better spacing */
+  /* Form Layout Enhancements */
+  .form-container {
+    @apply space-y-8;
+  }
+
+  .form-section {
+    @apply space-y-6 bg-card rounded-lg border p-6 shadow-sm;
+  }
+
   .form-group {
-    @apply space-y-4 mb-8;
-  }
-
-  /* Enhanced Select/Dropdown styling */
-  .select-trigger {
-    @apply h-12 px-4 py-2 w-full bg-background hover:bg-accent/50
-           text-base border border-input shadow-sm rounded-md
-           flex items-center justify-between
-           focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1
-           disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .select-content {
-    @apply bg-background border border-input shadow-md rounded-md mt-1
-           p-2 overflow-y-auto max-h-[300px] min-w-[240px];
-  }
-
-  .select-item {
-    @apply relative flex w-full items-center py-3 px-4 rounded-sm text-base
-           hover:bg-accent cursor-default outline-none
-           focus:bg-accent focus:text-accent-foreground
-           data-[disabled]:pointer-events-none data-[disabled]:opacity-50;
+    @apply space-y-4;
   }
 
   /* Enhanced Input Fields */
-  .input {
-    @apply h-12 px-4 py-2 text-base bg-background
-           border border-input rounded-md shadow-sm
-           placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1
-           disabled:cursor-not-allowed disabled:opacity-50;
+  .form-input {
+    @apply h-10 w-full rounded-md border border-input bg-background px-3 py-2
+           text-sm ring-offset-background placeholder:text-muted-foreground
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
+           focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
+           transition-colors duration-200;
   }
 
-  /* Label enhancements */
-  label {
-    @apply text-base font-medium text-foreground mb-2 block;
+  /* Label Refinements */
+  .form-label {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed 
+           peer-disabled:opacity-70 mb-2 block;
   }
 
-  /* Section headers */
-  .section-header {
-    @apply text-lg font-semibold mb-6;
+  /* Button Enhancements */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium
+           ring-offset-background transition-colors focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+           disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2;
   }
 
-  /* Form section spacing */
-  .form-section {
-    @apply space-y-6 mb-8;
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
-  /* Badge enhancements */
-  .badge {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-sm
-           font-medium bg-primary/10 text-primary-foreground;
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
 
-  /* Description text */
-  .form-description {
-    @apply text-sm text-muted-foreground mt-1;
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
   }
 
-  /* Select item with icon and description */
-  .select-item-content {
-    @apply flex flex-col py-2 px-1;
+  /* Card Enhancements */
+  .party-card {
+    @apply rounded-lg border bg-card p-4 shadow-sm transition-all duration-200
+           hover:shadow-md relative overflow-hidden;
   }
 
-  .select-item-header {
-    @apply flex items-center gap-3 mb-1;
+  .party-card-selected {
+    @apply ring-2 ring-primary ring-offset-2;
   }
 
-  .select-item-description {
-    @apply text-sm text-muted-foreground;
+  /* Progress Indicators */
+  .progress-bar {
+    @apply h-2 w-full rounded-full bg-secondary overflow-hidden;
   }
 
-  /* Error states */
+  .progress-bar-value {
+    @apply h-full bg-primary transition-all duration-300 ease-in-out;
+  }
+
+  /* Party List Enhancements */
+  .party-list {
+    @apply space-y-2 p-4;
+  }
+
+  .party-list-item {
+    @apply flex items-center space-x-4 rounded-md p-2 transition-colors
+           hover:bg-accent cursor-pointer;
+  }
+
+  .party-list-item-selected {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  /* Status Indicators */
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+           transition-colors focus:outline-none focus:ring-2 focus:ring-ring
+           focus:ring-offset-2;
+  }
+
+  .status-badge-success {
+    @apply bg-success/15 text-success hover:bg-success/25;
+  }
+
+  .status-badge-warning {
+    @apply bg-warning/15 text-warning hover:bg-warning/25;
+  }
+
+  /* Form Validation */
   .input-error {
-    @apply border-destructive focus:ring-destructive/50;
+    @apply border-destructive focus-visible:ring-destructive/50;
   }
 
   .error-message {
-    @apply text-sm text-destructive mt-1;
+    @apply text-sm font-medium text-destructive mt-1;
   }
 
-  /* Card enhancements */
-  .form-card {
-    @apply p-8 border border-border rounded-lg bg-card shadow-sm;
-  }
-
-  /* Icon wrapper */
+  /* Icons and Decorative Elements */
   .icon-wrapper {
-    @apply flex items-center gap-2 text-muted-foreground;
-  }
-}
-
-/* Dark mode refinements */
-.dark {
-  .select-trigger {
-    @apply bg-input border-input/10 hover:bg-accent/20;
+    @apply flex h-9 w-9 items-center justify-center rounded-lg border
+           bg-muted/50 text-muted-foreground;
   }
 
-  .select-content {
-    @apply bg-input border-input/20;
+  .divider {
+    @apply h-px w-full bg-border my-4;
   }
 
-  .select-item {
-    @apply hover:bg-accent/20 focus:bg-accent/20;
+  /* Tooltips and Helpers */
+  .helper-text {
+    @apply text-sm text-muted-foreground mt-1;
   }
 
-  .form-card {
-    @apply bg-card border-border/20;
+  /* Animation Classes */
+  .fade-in {
+    @apply transition-opacity duration-200 ease-in-out;
+  }
+
+  .slide-in {
+    @apply transition-transform duration-200 ease-in-out;
+  }
+
+  /* Layout Utilities */
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  .flex-between {
+    @apply flex items-center justify-between;
+  }
+
+  /* Scrollable Areas */
+  .scroll-area {
+    @apply overflow-auto scrollbar-thin scrollbar-thumb-secondary
+           scrollbar-track-transparent;
+  }
+
+  /* Responsive Adjustments */
+  @screen sm {
+    .form-section {
+      @apply p-8;
+    }
+  }
+
+  @screen lg {
+    .form-container {
+      @apply grid grid-cols-12 gap-6;
+    }
+
+    .sidebar {
+      @apply col-span-3;
+    }
+
+    .main-content {
+      @apply col-span-9;
+    }
   }
 }

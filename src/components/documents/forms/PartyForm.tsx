@@ -1,131 +1,82 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { PartyList } from './PartyList';
 import { PartyDetailsForm } from './PartyDetailsForm';
-import { Party, INITIAL_PARTY, ValidationErrors } from "@/types/party";
-import { validateParties } from "@/lib/validations/party";
-import Cookies from 'js-cookie';
-import { useDebouncedCallback } from 'use-debounce';
-import { useSearchParams } from 'next/navigation';
+import { Party, INITIAL_PARTY } from "@/types/party";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { UserPlus2, Users } from "lucide-react";
 
 interface PartyFormProps {
   parties: Party[];
   onChange: (parties: Party[]) => void;
   onValidationChange?: (isValid: boolean) => void;
+  prefilledFirstParty?: boolean;
+  validationErrors?: Record<string, any>;
 }
 
 export function PartyForm({
   parties,
   onChange,
-  onValidationChange
+  onValidationChange,
+  prefilledFirstParty = false,
+  validationErrors = {}
 }: PartyFormProps) {
-  const searchParams = useSearchParams();
-  const documentType = searchParams.get('type') || '';
-  
-  const [selectedParty, setSelectedParty] = useState<string | null>(
-    parties[0]?.id || null
-  );
-  const [validationErrors, setValidationErrors] = useState<Record<string, ValidationErrors>>({});
+  const [selectedParty, setSelectedParty] = useState<string | null>(parties[0]?.id || null);
   const { toast } = useToast();
 
-  // Load saved data from cookie on initial mount
-  useEffect(() => {
-    const savedData = Cookies.get('document_draft');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (parsed.type === documentType && parsed.parties?.length > 0) {
-          onChange(parsed.parties);
-          setSelectedParty(parsed.parties[0].id);
-        }
-      } catch (error) {
-        console.error('Error loading saved data:', error);
-      }
-    }
-  }, [documentType]);
-
-  // Debounced save function
-  const saveToStorage = useDebouncedCallback((updatedParties: Party[]) => {
-    try {
-      const dataToSave = {
-        type: documentType,
-        parties: updatedParties,
-        lastUpdated: new Date().toISOString()
-      };
-      Cookies.set('document_draft', JSON.stringify(dataToSave), { expires: 7 }); // Expires in 7 days
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      toast({
-        variant: "destructive",
-        title: "Autosave Failed",
-        description: "Failed to save your changes. Please try again.",
-      });
-    }
-  }, 1000); // 1 second debounce
-
-  const addParty = () => {
-    const newParty: Party = {
+  // Add new party and maintain selection
+  const addParty = useCallback(() => {
+    const newParty = {
       ...INITIAL_PARTY,
-      id: crypto.randomUUID()
+      id: crypto.randomUUID(),
+      role: `Party ${parties.length + 1}`
     };
     const updatedParties = [...parties, newParty];
     onChange(updatedParties);
-    setSelectedParty(newParty.id);
-    saveToStorage(updatedParties);
-    toast({
-      title: "Party Added",
-      description: "New party has been added to the document.",
-    });
-  };
+    setSelectedParty(newParty.id); // Set selection to new party
+    toast({ title: "New party added" });
+  }, [parties, onChange, toast]);
 
+  // Update party while maintaining selection
   const updateParty = useCallback((id: string, updates: Partial<Party>) => {
-    const updatedParties = parties.map((party) =>
-      party.id === id ? { ...party, ...updates } : party
+    const updatedParties = parties.map(p => 
+      p.id === id ? { ...p, ...updates } : p
     );
-
-    // Validate updated party
-    const errors = validateParties(updatedParties);
-    setValidationErrors(prev => ({
-      ...prev,
-      [id]: errors
-    }));
-
     onChange(updatedParties);
-    saveToStorage(updatedParties);
+    onValidationChange?.(true);
+  }, [parties, onChange, onValidationChange]);
 
-    // Check if all parties are valid
-    const isValid = Object.keys(errors).length === 0;
-    onValidationChange?.(isValid);
-  }, [parties, onChange, onValidationChange, saveToStorage]);
-
-  const removeParty = (id: string) => {
-    const updatedParties = parties.filter((party) => party.id !== id);
-    onChange(updatedParties);
-    saveToStorage(updatedParties);
-
-    if (selectedParty === id) {
-      setSelectedParty(updatedParties[0]?.id || null);
+  // Remove party with improved selection handling
+  const removeParty = useCallback((id: string) => {
+    if (prefilledFirstParty && id === parties[0]?.id) {
+      toast({
+        variant: "destructive",
+        title: "Cannot remove first party"
+      });
+      return;
     }
 
-    // Remove validation errors for removed party
-    const newErrors = { ...validationErrors };
-    delete newErrors[id];
-    setValidationErrors(newErrors);
+    const updatedParties = parties.filter(p => p.id !== id);
+    onChange(updatedParties);
 
-    toast({
-      title: "Party Removed",
-      description: "Party has been removed from the document.",
-    });
-  };
+    // If removing selected party, select the previous one or the first one
+    if (selectedParty === id) {
+      const currentIndex = parties.findIndex(p => p.id === id);
+      const newSelectedId = currentIndex > 0 
+        ? parties[currentIndex - 1].id 
+        : updatedParties[0]?.id;
+      setSelectedParty(newSelectedId);
+    }
+  }, [parties, selectedParty, prefilledFirstParty, onChange, toast]);
 
-  // Get the currently selected party's details
   const currentParty = parties.find(p => p.id === selectedParty);
   const currentErrors = selectedParty ? validationErrors[selectedParty] || {} : {};
 
   return (
-    <div className="flex gap-6 min-h-[600px] h-[calc(100vh-25rem)]">
+    <div className="flex h-full min-h-0">
       {/* Party List */}
       <PartyList
         parties={parties}
@@ -135,21 +86,21 @@ export function PartyForm({
       />
 
       {/* Party Details */}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0 p-4">
         {currentParty ? (
           <PartyDetailsForm
             party={currentParty}
             onUpdate={(updates) => updateParty(currentParty.id, updates)}
             onRemove={() => removeParty(currentParty.id)}
-            canRemove={parties.length > 1}
+            canRemove={!prefilledFirstParty || currentParty.id !== parties[0]?.id}
             errors={currentErrors}
+            isFirstParty={prefilledFirstParty && currentParty.id === parties[0]?.id}
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full text-muted-foreground">
             <div className="text-center">
-              <p className="text-muted-foreground">
-                Click "Add Party" to get started
-              </p>
+              <Users className="h-8 w-8 mx-auto mb-2" />
+              <p>Select a party to view details</p>
             </div>
           </div>
         )}

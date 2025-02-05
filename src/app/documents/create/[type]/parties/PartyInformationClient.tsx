@@ -4,25 +4,23 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PartyForm } from "@/components/documents/forms/PartyForm";
 import { DocumentWizard } from "@/components/documents/wizard/DocumentWizard";
-import { Card } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Party, INITIAL_PARTY } from "@/types/party";
 import { DocumentType } from "@/types/document";
 import { validateParties } from "@/lib/validations/party";
 import { useDocumentProgress } from "@/hooks/useDocumentProgress";
-import { AlertCircle } from 'lucide-react';
 import { useWizardNavigation } from '@/hooks/useWizardNavigation';
+import { AlertCircle, Info, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 
 interface PartyInformationClientProps {
   documentType: string;
   initialPartyId: string;
 }
 
-export function PartyInformationClient({ 
-  documentType, 
-  initialPartyId 
-}: PartyInformationClientProps) {
+export function PartyInformationClient({ documentType, initialPartyId }: PartyInformationClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isValid, setIsValid] = useState(false);
@@ -31,6 +29,7 @@ export function PartyInformationClient({
   const [parties, setParties] = useState<Party[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
+  const [isErrorsOpen, setIsErrorsOpen] = useState(false);
   const initializedRef = useRef(false);
   const navigationInProgressRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
@@ -40,33 +39,14 @@ export function PartyInformationClient({
     if (!initializedRef.current && initialPartyId && !parties.length) {
       const initialParty = {
         ...INITIAL_PARTY,
-        id: initialPartyId
+        id: initialPartyId,
+        type: 'individual',
+        role: 'First Party'
       };
       setParties([initialParty]);
       initializedRef.current = true;
     }
   }, [initialPartyId, parties.length]);
-
-  // Safe navigation
-  const safeNavigate = useCallback((route: string | null) => {
-    if (!route || navigationInProgressRef.current) return;
-    navigationInProgressRef.current = true;
-    try {
-      router.push(route);
-    } catch (error) {
-      console.error('Navigation error:', error);
-      toast({
-        variant: "destructive",
-        title: "Navigation Error",
-        description: "Failed to navigate. Please try again."
-      });
-    } finally {
-      // Reset after a short delay to prevent double-navigation
-      setTimeout(() => {
-        navigationInProgressRef.current = false;
-      }, 100);
-    }
-  }, [router, toast]);
 
   // Process party data safely
   const processPartyData = useCallback((party: Party | null) => {
@@ -93,10 +73,7 @@ export function PartyInformationClient({
 
   // Validate and update status
   const validateAndUpdateStatus = useCallback((currentParties: Party[]) => {
-    console.log('Starting validation with parties:', currentParties);
-    
     if (!Array.isArray(currentParties)) {
-      console.log('Invalid parties array');
       return false;
     }
     
@@ -105,24 +82,20 @@ export function PartyInformationClient({
         .filter(Boolean)
         .map(processPartyData)
         .filter(Boolean) as Party[];
-  
-      console.log('Processed parties:', processedParties);
-  
-      const errors = validateParties(processedParties);
-      console.log('Validation errors:', errors);
       
+      const errors = validateParties(processedParties);
       const hasErrors = Object.keys(errors).length > 0;
       const hasEnoughParties = processedParties.length >= 2;
       const isValidForm = !hasErrors && hasEnoughParties;
-  
-      console.log('Validation results:', {
-        hasErrors,
-        hasEnoughParties,
-        isValidForm
-      });
-  
+      
       setValidationErrors(errors);
       setIsValid(isValidForm);
+
+      // Auto-open errors panel if there are errors
+      if (hasErrors) {
+        setIsErrorsOpen(true);
+      }
+
       return isValidForm;
     } catch (error) {
       console.error('Error validating parties:', error);
@@ -153,30 +126,25 @@ export function PartyInformationClient({
     }
   }, [data, processPartyData, validateAndUpdateStatus]);
 
-  // Save progress with debounce
-  const saveProgress = useCallback(async (currentParties: Party[]): Promise<boolean> => {
-    if (!Array.isArray(currentParties)) return false;
-
+  // Safe navigation
+  const safeNavigate = useCallback((route: string | null) => {
+    if (!route || navigationInProgressRef.current) return;
+    navigationInProgressRef.current = true;
     try {
-      const result = await updateProgress({
-        type: documentType as DocumentType,
-        step: 2,
-        data: {
-          ...data?.data,
-          parties: currentParties.filter(Boolean)
-        }
-      });
-      return !!result;
+      router.push(route);
     } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('Navigation error:', error);
       toast({
         variant: "destructive",
-        title: "Auto-save Failed",
-        description: "Your changes may not be saved. Please try again."
+        title: "Navigation Error",
+        description: "Failed to navigate. Please try again."
       });
-      return false;
+    } finally {
+      setTimeout(() => {
+        navigationInProgressRef.current = false;
+      }, 100);
     }
-  }, [documentType, data?.data, updateProgress, toast]);
+  }, [router, toast]);
 
   // Handle parties changes with debounce
   const handlePartiesChange = useCallback(async (newParties: Party[]) => {
@@ -197,36 +165,45 @@ export function PartyInformationClient({
       }
 
       // Set new timeout for saving
-      saveTimeoutRef.current = setTimeout(() => {
-        saveProgress(processedParties).catch(console.error);
+      saveTimeoutRef.current = setTimeout(async () => {
+        setIsSaving(true);
+        try {
+          await updateProgress({
+            type: documentType as DocumentType,
+            step: 2,
+            data: {
+              ...data?.data,
+              parties: processedParties
+            }
+          });
+        } catch (error) {
+          console.error('Save error:', error);
+          toast({
+            variant: "destructive",
+            title: "Auto-save Failed",
+            description: "Your changes may not be saved. Please try again."
+          });
+        } finally {
+          setIsSaving(false);
+        }
       }, 500);
     } catch (error) {
       console.error('Error handling parties change:', error);
     }
-  }, [saveProgress, validateAndUpdateStatus, processPartyData]);
+  }, [data?.data, documentType, processPartyData, updateProgress, validateAndUpdateStatus, toast]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleNext = async () => {
+  // Navigation handlers
+  const handleNext = useCallback(async () => {
+    if (!isValid) return false;
     try {
-      // Just navigate directly without save check
-      console.log('Navigating to details page...');
       router.push(`/documents/create/${documentType}/details`);
       return true;
     } catch (error) {
       console.error('Navigation error:', error);
       return false;
     }
-  };
+  }, [isValid, router, documentType]);
 
-  // Handle back button click
   const handleBack = useCallback(() => {
     if (navigationInProgressRef.current) return;
     const prevRoute = navigateBack('parties');
@@ -243,9 +220,21 @@ export function PartyInformationClient({
         .filter(Boolean);
     } catch (error) {
       console.error('Error getting error summary:', error);
-      return ['An error occurred while displaying validation errors.'];
+      return ['An error occurred while processing validation errors.'];
     }
   }, [validationErrors]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const hasErrors = Object.keys(validationErrors).length > 0;
+  const errorMessages = getErrorSummary();
 
   return (
     <DocumentWizard
@@ -257,49 +246,68 @@ export function PartyInformationClient({
       documentType={documentType}
     >
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Party Information
-          </h2>
-          <p className="text-sm text-muted-foreground max-w-2xl">
-            Add all parties involved in this document. A {documentType.toUpperCase()} requires at least two parties to be valid.
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            <strong>Organization:</strong> The company or entity being represented<br />
-            <strong>Title:</strong> Role of the person signing (e.g., CEO, Director, Manager)<br />
-            <strong>Address:</strong> Official business or registered address of the organization
-          </p>
+        {/* Header with Validation Panel */}
+        <div className="bg-card p-6 rounded-lg border space-y-4">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl font-semibold">
+              Add Parties to Your {documentType}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Fill in the details for each party involved in this agreement. You'll need at least two parties to proceed.
+            </p>
+          </div>
+
+          {/* Expanded Validation Panel */}
+          {hasErrors && (
+            <Collapsible 
+              open={isErrorsOpen} 
+              onOpenChange={setIsErrorsOpen}
+              className="bg-destructive/5 rounded-md"
+            >
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-full flex items-center justify-between p-4 text-left"
+                >
+                  <div className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">
+                      {errorMessages.length} validation {errorMessages.length === 1 ? 'issue' : 'issues'} to fix
+                    </span>
+                  </div>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pb-4">
+                <ul className="list-disc ml-9 space-y-2">
+                  {errorMessages.map((error, index) => (
+                    <li key={index} className="text-sm text-destructive">
+                      {error}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
 
-        <Card className="pt-6 overflow-hidden">
+        {/* Main Form */}
+        <div className="bg-background">
           <PartyForm
             parties={parties}
             onChange={handlePartiesChange}
+            onValidationChange={setIsValid}
             validationErrors={validationErrors}
+            prefilledFirstParty={true}
           />
-        </Card>
+        </div>
 
-        {Object.keys(validationErrors).length > 0 && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Validation Errors</AlertTitle>
-            <AlertDescription>
-              <ul className="list-disc pl-4">
-                {getErrorSummary().map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
+        {/* Context-Aware Guidance */}
         {parties.length < 2 && (
-          <Alert variant="warning">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>More Parties Required</AlertTitle>
+          <Alert>
+            <Info className="h-4 w-4" />
             <AlertDescription>
-              At least one more party is required. Click "Add Party" above to add
-              another party to the document.
+              Click "Add Party" to add the second party to your {documentType.toLowerCase()}.
             </AlertDescription>
           </Alert>
         )}
@@ -307,3 +315,5 @@ export function PartyInformationClient({
     </DocumentWizard>
   );
 }
+
+export default PartyInformationClient;
