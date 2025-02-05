@@ -63,34 +63,81 @@ export function DocumentSettings({
     const newSettings = { ...localSettings };
     let current: any = newSettings;
     
-    // Navigate to the nested property
     for (let i = 0; i < path.length - 1; i++) {
       current = current[path[i]];
     }
     
-    // Set the value
     current[path[path.length - 1]] = value;
     
     setLocalSettings(newSettings);
     onChange(newSettings);
   };
 
+  // Reusable card section component for better organization
+  const SettingsCard = ({ 
+    icon: Icon, 
+    title, 
+    description, 
+    children 
+  }: { 
+    icon: any, 
+    title: string, 
+    description: string, 
+    children: React.ReactNode 
+  }) => (
+    <Card className="w-full">
+      <CardHeader className="space-y-1 sm:space-y-2">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          {title}
+        </CardTitle>
+        <CardDescription className="text-xs sm:text-sm">
+          {description}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 sm:space-y-6">
+        {children}
+      </CardContent>
+    </Card>
+  );
+
+  // Reusable form group component
+  const FormGroup = ({ 
+    label, 
+    htmlFor, 
+    children 
+  }: { 
+    label: string, 
+    htmlFor: string, 
+    children: React.ReactNode 
+  }) => (
+    <div className="space-y-2">
+      <Label 
+        htmlFor={htmlFor}
+        className="text-sm sm:text-base"
+      >
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+
   return (
-    <div className="space-y-6 px-6 pb-6">
-      {/* Cover Page Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Cover Page Settings
-          </CardTitle>
-          <CardDescription>
-            Configure the appearance of your document's cover page
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+      <div className="grid gap-4 sm:gap-6">
+        {/* Cover Page Settings */}
+        <SettingsCard
+          icon={FileText}
+          title="Cover Page Settings"
+          description="Configure the appearance of your document's cover page"
+        >
           <div className="flex items-center justify-between">
-            <Label htmlFor="cover-enabled">Enable Cover Page</Label>
+            <Label 
+              htmlFor="cover-enabled"
+              className="text-sm sm:text-base"
+            >
+              Enable Cover Page
+            </Label>
             <Switch 
               id="cover-enabled"
               checked={localSettings.cover_page.enabled}
@@ -101,48 +148,33 @@ export function DocumentSettings({
           </div>
 
           {localSettings.cover_page.enabled && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="watermark">Watermark Text</Label>
-                <Input 
-                  id="watermark"
-                  value={localSettings.cover_page.watermark}
-                  onChange={(e) => 
-                    handleChange(['cover_page', 'watermark'], e.target.value)
-                  }
-                  placeholder="e.g., CONFIDENTIAL"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                {/* <Label htmlFor="logo-enabled">Include Logo</Label> */}
-                {/* <Switch 
-                  id="logo-enabled"
-                  checked={localSettings.cover_page.logo_enabled}
-                  onCheckedChange={(checked) => 
-                    handleChange(['cover_page', 'logo_enabled'], checked)
-                  }
-                /> */}
-              </div>
-            </>
+            <FormGroup label="Watermark Text" htmlFor="watermark">
+              <Input 
+                id="watermark"
+                value={localSettings.cover_page.watermark}
+                onChange={(e) => 
+                  handleChange(['cover_page', 'watermark'], e.target.value)
+                }
+                placeholder="e.g., CONFIDENTIAL"
+                className="w-full"
+              />
+            </FormGroup>
           )}
-        </CardContent>
-      </Card>
+        </SettingsCard>
 
-      {/* Header & Footer Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Layout className="h-5 w-5" />
-            Header & Footer
-          </CardTitle>
-          <CardDescription>
-            Configure document headers and footers
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        {/* Header & Footer Settings */}
+        <SettingsCard
+          icon={Layout}
+          title="Header & Footer"
+          description="Configure document headers and footers"
+        >
           <div className="flex items-center justify-between">
-            <Label htmlFor="header-enabled">Enable Header/Footer</Label>
+            <Label 
+              htmlFor="header-enabled"
+              className="text-sm sm:text-base"
+            >
+              Enable Header/Footer
+            </Label>
             <Switch 
               id="header-enabled"
               checked={localSettings.header_footer.enabled}
@@ -153,9 +185,8 @@ export function DocumentSettings({
           </div>
 
           {localSettings.header_footer.enabled && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="header-text">Header Text</Label>
+            <div className="space-y-4">
+              <FormGroup label="Header Text" htmlFor="header-text">
                 <Input 
                   id="header-text"
                   value={localSettings.header_footer.header_text}
@@ -163,11 +194,11 @@ export function DocumentSettings({
                     handleChange(['header_footer', 'header_text'], e.target.value)
                   }
                   placeholder="e.g., CONFIDENTIAL & PROPRIETARY"
+                  className="w-full"
                 />
-              </div>
+              </FormGroup>
 
-              <div className="space-y-2">
-                <Label htmlFor="footer-text">Footer Text</Label>
+              <FormGroup label="Footer Text" htmlFor="footer-text">
                 <Input 
                   id="footer-text"
                   value={localSettings.header_footer.footer_text}
@@ -175,74 +206,49 @@ export function DocumentSettings({
                     handleChange(['header_footer', 'footer_text'], e.target.value)
                   }
                   placeholder="e.g., Page {page_number} of {total_pages}"
+                  className="w-full"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-1">
                   Use {'{page_number}'} and {'{total_pages}'} as placeholders
                 </p>
-              </div>
-            </>
+              </FormGroup>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </SettingsCard>
 
-      {/* Styling Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Document Styling
-          </CardTitle>
-          <CardDescription>
-            Customize the visual appearance of your document
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="font-family">Font Family</Label>
+        {/* Styling Settings */}
+        <SettingsCard
+          icon={Palette}
+          title="Document Styling"
+          description="Customize the visual appearance of your document"
+        >
+          <FormGroup label="Font Family" htmlFor="font-family">
             <Select 
               value={localSettings.styling.font_family}
               onValueChange={(value) => 
                 handleChange(['styling', 'font_family'], value)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="font-family" className="w-full">
                 <SelectValue placeholder="Select a font" />
               </SelectTrigger>
               <SelectContent>
                 {FONT_FAMILIES.map((font) => (
-                  <SelectItem key={font.value} value={font.value}>
+                  <SelectItem 
+                    key={font.value} 
+                    value={font.value}
+                    className="text-sm sm:text-base"
+                  >
                     <span style={{ fontFamily: font.value }}>{font.label}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormGroup>
 
-          <Separator className="my-4" />
-
-          {/* <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Primary Color</Label>
-              <ColorPicker 
-                value={localSettings.styling.primary_color}
-                onChange={(color) => 
-                  handleChange(['styling', 'primary_color'], color)
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Secondary Color</Label>
-              <ColorPicker 
-                value={localSettings.styling.secondary_color}
-                onChange={(color) => 
-                  handleChange(['styling', 'secondary_color'], color)
-                }
-              />
-            </div>
-          </div> */}
-        </CardContent>
-      </Card>
+          <Separator className="my-4 sm:my-6" />
+        </SettingsCard>
+      </div>
     </div>
   );
 }

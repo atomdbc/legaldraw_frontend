@@ -245,19 +245,19 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
       isSaving={isSaving}
       documentType={documentType}
     >
-      <div className="space-y-6">
-        {/* Header with Validation Panel */}
-        <div className="bg-card p-6 rounded-lg border space-y-4">
+      <div className="space-y-4 md:space-y-6">
+        {/* Responsive Header with Validation Panel */}
+        <div className="bg-card p-4 md:p-6 rounded-lg border space-y-3 md:space-y-4">
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-semibold">
-              Add Parties to Your {documentType}
+            <h2 className="text-xl md:text-2xl font-semibold">
+              Add Parties to Your {documentType.toUpperCase()}
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs md:text-sm text-muted-foreground mt-1">
               Fill in the details for each party involved in this agreement. You'll need at least two parties to proceed.
             </p>
           </div>
 
-          {/* Expanded Validation Panel */}
+          {/* Responsive Validation Panel */}
           {hasErrors && (
             <Collapsible 
               open={isErrorsOpen} 
@@ -267,21 +267,21 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
               <CollapsibleTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="w-full flex items-center justify-between p-4 text-left"
+                  className="w-full flex items-center justify-between p-3 md:p-4 text-left"
                 >
                   <div className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span className="font-medium">
+                    <AlertTriangle className="h-4 w-4 md:h-5 md:w-5" />
+                    <span className="text-sm md:text-base font-medium">
                       {errorMessages.length} validation {errorMessages.length === 1 ? 'issue' : 'issues'} to fix
                     </span>
                   </div>
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="px-4 pb-4">
-                <ul className="list-disc ml-9 space-y-2">
+              <CollapsibleContent className="px-3 md:px-4 pb-3 md:pb-4">
+                <ul className="list-disc ml-6 md:ml-9 space-y-1 md:space-y-2">
                   {errorMessages.map((error, index) => (
-                    <li key={index} className="text-sm text-destructive">
+                    <li key={index} className="text-xs md:text-sm text-destructive">
                       {error}
                     </li>
                   ))}
@@ -291,8 +291,8 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
           )}
         </div>
 
-        {/* Main Form */}
-        <div className="bg-background">
+        {/* Responsive Main Form */}
+        <div className="bg-background px-2 md:px-0">
           <PartyForm
             parties={parties}
             onChange={handlePartiesChange}
@@ -302,11 +302,11 @@ export function PartyInformationClient({ documentType, initialPartyId }: PartyIn
           />
         </div>
 
-        {/* Context-Aware Guidance */}
+        {/* Responsive Context-Aware Guidance */}
         {parties.length < 2 && (
-          <Alert>
+          <Alert className="mx-2 md:mx-0">
             <Info className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               Click "Add Party" to add the second party to your {documentType.toLowerCase()}.
             </AlertDescription>
           </Alert>

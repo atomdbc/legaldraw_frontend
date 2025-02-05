@@ -160,7 +160,6 @@ const NDA_FIELDS: FieldConfig[] = [
   }
 ];
 
-
 interface DocumentVariablesProps {
   documentType: string;
   variables: Partial<NDAVariables>;
@@ -232,24 +231,33 @@ export function DocumentVariables({
     const commonProps = {
       id: field.id,
       'aria-invalid': !!error,
-      className: cn(error && "border-destructive")
+      className: cn(
+        error && "border-destructive",
+        "w-full text-sm sm:text-base"
+      )
     };
 
     switch (field.type) {
       case 'select':
         return (
           <div key={field.id} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor={field.id} className="flex items-center gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <Label 
+                htmlFor={field.id} 
+                className="flex flex-wrap items-center gap-1.5 text-sm sm:text-base"
+              >
                 {field.label}
-                {field.required && <span className="text-destructive">*</span>}
+                {field.required && (
+                  <span className="text-destructive text-sm">*</span>
+                )}
                 {field.aiAssisted && (
-                  <Badge variant="secondary" className="ml-2">
+                  <Badge variant="secondary" className="ml-1 text-xs whitespace-nowrap">
                     <Sparkles className="h-3 w-3 mr-1" />
                     AI Assisted
                   </Badge>
                 )}
               </Label>
+              <p className="text-xs text-muted-foreground">{field.description}</p>
             </div>
             <Select
               value={value as string || ''}
@@ -258,25 +266,39 @@ export function DocumentVariables({
               <SelectTrigger {...commonProps}>
                 <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[300px]">
                 {field.suggestions?.map((suggestion) => (
-                  <SelectItem key={suggestion} value={suggestion}>
+                  <SelectItem 
+                    key={suggestion} 
+                    value={suggestion}
+                    className="text-sm whitespace-normal"
+                  >
                     {suggestion}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p className="text-xs sm:text-sm text-destructive">{error}</p>
+            )}
           </div>
         );
 
       case 'date':
         return (
           <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id} className="flex items-center gap-2">
-              {field.label}
-              {field.required && <span className="text-destructive">*</span>}
-            </Label>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <Label 
+                htmlFor={field.id} 
+                className="flex items-center gap-1.5 text-sm sm:text-base"
+              >
+                {field.label}
+                {field.required && (
+                  <span className="text-destructive text-sm">*</span>
+                )}
+              </Label>
+              <p className="text-xs text-muted-foreground">{field.description}</p>
+            </div>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -284,23 +306,30 @@ export function DocumentVariables({
                   {...commonProps}
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !value && "text-muted-foreground"
+                    !value && "text-muted-foreground",
+                    "text-sm sm:text-base"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {value ? format(new Date(value), 'PPP') : "Select date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent 
+                className="w-auto p-0" 
+                align="start"
+              >
                 <Calendar
                   mode="single"
                   selected={value ? new Date(value) : undefined}
                   onSelect={(date) => handleChange(field, date)}
                   initialFocus
+                  className="rounded-md border"
                 />
               </PopoverContent>
             </Popover>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p className="text-xs sm:text-sm text-destructive">{error}</p>
+            )}
           </div>
         );
 
@@ -310,31 +339,39 @@ export function DocumentVariables({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Document Variables</h3>
+    <div className="w-full max-w-full space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 className="text-base sm:text-lg font-semibold">Document Variables</h3>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" onClick={handleQuickFill}>
+            <Button 
+              variant="outline" 
+              onClick={handleQuickFill}
+              className="w-full sm:w-auto text-sm"
+            >
               <Wand2 className="h-4 w-4 mr-2" />
               Quick Fill
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Auto-fill with AI-suggested values</p>
+            <p className="text-xs">Auto-fill with AI-suggested values</p>
           </TooltipContent>
         </Tooltip>
       </div>
 
-      <div className="grid gap-6">
-        {NDA_FIELDS.map(renderField)}
-      </div>
+      <Card className="p-4 sm:p-6">
+        <div className="grid gap-6">
+          {NDA_FIELDS.map(renderField)}
+        </div>
+      </Card>
 
       {Object.keys(errors).length > 0 && (
         <div className="rounded-lg border-destructive/50 border bg-destructive/10 p-4">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <p className="text-sm font-medium">Please complete all required fields</p>
+          <div className="flex items-start sm:items-center gap-2 text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5 sm:mt-0 flex-shrink-0" />
+            <p className="text-xs sm:text-sm font-medium">
+              Please complete all required fields
+            </p>
           </div>
         </div>
       )}

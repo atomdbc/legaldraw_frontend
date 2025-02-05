@@ -25,6 +25,7 @@ export function PartyForm({
   validationErrors = {}
 }: PartyFormProps) {
   const [selectedParty, setSelectedParty] = useState<string | null>(parties[0]?.id || null);
+  const [isMobileListVisible, setIsMobileListVisible] = useState(false);
   const { toast } = useToast();
 
   // Add new party and maintain selection
@@ -36,7 +37,8 @@ export function PartyForm({
     };
     const updatedParties = [...parties, newParty];
     onChange(updatedParties);
-    setSelectedParty(newParty.id); // Set selection to new party
+    setSelectedParty(newParty.id);
+    setIsMobileListVisible(false);
     toast({ title: "New party added" });
   }, [parties, onChange, toast]);
 
@@ -62,7 +64,6 @@ export function PartyForm({
     const updatedParties = parties.filter(p => p.id !== id);
     onChange(updatedParties);
 
-    // If removing selected party, select the previous one or the first one
     if (selectedParty === id) {
       const currentIndex = parties.findIndex(p => p.id === id);
       const newSelectedId = currentIndex > 0 
@@ -76,34 +77,64 @@ export function PartyForm({
   const currentErrors = selectedParty ? validationErrors[selectedParty] || {} : {};
 
   return (
-    <div className="flex h-full min-h-0">
-      {/* Party List */}
-      <PartyList
-        parties={parties}
-        selectedParty={selectedParty}
-        onSelectParty={setSelectedParty}
-        onAddParty={addParty}
-      />
+    <div className="h-full min-h-0">
+      {/* Mobile Party Selector - Only visible on mobile */}
+      <div className="block md:hidden p-4 border-b">
+        <Button 
+          variant="outline" 
+          className="w-full justify-between"
+          onClick={() => setIsMobileListVisible(!isMobileListVisible)}
+        >
+          <span className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {currentParty ? currentParty.role : 'Select Party'}
+          </span>
+          <UserPlus2 className="h-4 w-4" />
+        </Button>
+      </div>
 
-      {/* Party Details */}
-      <div className="flex-1 min-w-0 p-4">
-        {currentParty ? (
-          <PartyDetailsForm
-            party={currentParty}
-            onUpdate={(updates) => updateParty(currentParty.id, updates)}
-            onRemove={() => removeParty(currentParty.id)}
-            canRemove={!prefilledFirstParty || currentParty.id !== parties[0]?.id}
-            errors={currentErrors}
-            isFirstParty={prefilledFirstParty && currentParty.id === parties[0]?.id}
+      {/* Main Content Area */}
+      <div className="flex h-[calc(100%-4rem)] md:h-full">
+        {/* Party List - Original desktop version plus mobile overlay */}
+        <div className={`
+          md:block md:relative md:w-auto md:h-auto md:min-h-0
+          ${isMobileListVisible ? 'block' : 'hidden'}
+          fixed md:static
+          inset-0
+          z-50 md:z-0
+          bg-background md:bg-transparent
+        `}>
+          <PartyList
+            parties={parties}
+            selectedParty={selectedParty}
+            onSelectParty={(id) => {
+              setSelectedParty(id);
+              setIsMobileListVisible(false);
+            }}
+            onAddParty={addParty}
           />
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <div className="text-center">
-              <Users className="h-8 w-8 mx-auto mb-2" />
-              <p>Select a party to view details</p>
+        </div>
+
+        {/* Party Details - Preserving original desktop layout */}
+        <div className="flex-1 min-w-0 p-4">
+          {currentParty ? (
+            <PartyDetailsForm
+              party={currentParty}
+              onUpdate={(updates) => updateParty(currentParty.id, updates)}
+              onRemove={() => removeParty(currentParty.id)}
+              canRemove={!prefilledFirstParty || currentParty.id !== parties[0]?.id}
+              errors={currentErrors}
+              isFirstParty={prefilledFirstParty && currentParty.id === parties[0]?.id}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center">
+                <Users className="h-8 w-8 mx-auto mb-2" />
+                <p>Select a party to view details</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

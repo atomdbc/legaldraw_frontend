@@ -85,19 +85,10 @@ export function DocumentVariables({
       ? value.toISOString()
       : value;
 
-    const newVariables = {
+    onChange({
       ...variables,
       [field.key]: formattedValue
-    };
-
-    onChange(newVariables);
-  };
-
-  const getJurisdictionLabel = (value: string) => {
-    if (value.startsWith('custom_')) {
-      return customJurisdictions[value] || value;
-    }
-    return getJurisdictionById(value)?.label || value;
+    });
   };
 
   const handleCustomJurisdictionSubmit = () => {
@@ -121,31 +112,31 @@ export function DocumentVariables({
     }
   };
 
-  if (fields.length === 0) {
-    return (
-      <Card className="p-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <p>Document type "{documentType}" is not properly configured. Available types are: {Object.keys(DOCUMENT_FIELDS_CONFIG).join(', ')}</p>
-        </Alert>
-      </Card>
-    );
-  }
-
+  // Field Rendering Components
   const renderJurisdictionField = (field: JurisdictionField) => (
-    <div>
+    <div className="w-full">
       {showCustomJurisdiction ? (
-        <div className="flex gap-2">
-          <Input
-            value={customJurisdiction}
-            onChange={(e) => setCustomJurisdiction(e.target.value)}
-            placeholder="Enter jurisdiction name"
-            className={cn(errors[field.id] && "border-destructive")}
-          />
-          <Button onClick={handleCustomJurisdictionSubmit}>Add</Button>
-          <Button variant="outline" onClick={() => setShowCustomJurisdiction(false)}>
-            Cancel
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex-1">
+            <Input
+              value={customJurisdiction}
+              onChange={(e) => setCustomJurisdiction(e.target.value)}
+              placeholder="Enter jurisdiction name"
+              className={cn(errors[field.id] && "border-destructive")}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleCustomJurisdictionSubmit} size="sm">
+              Add
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCustomJurisdiction(false)}
+              size="sm"
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       ) : (
         <Select
@@ -159,64 +150,37 @@ export function DocumentVariables({
           }}
         >
           <SelectTrigger className={cn(errors[field.id] && "border-destructive")}>
-            <SelectValue>
-              {variables[field.key as keyof DocumentVariablesType] 
-                ? getJurisdictionLabel(variables[field.key as keyof DocumentVariablesType] as string)
-                : "Select jurisdiction"}
-            </SelectValue>
+            <SelectValue placeholder="Select jurisdiction" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Popular Jurisdictions</SelectLabel>
-              {JURISDICTION_GROUPS.popular.map(id => {
-                const jurisdiction = getJurisdictionById(id);
-                return jurisdiction && (
-                  <SelectItem key={id} value={id}>
-                    {jurisdiction.label}
-                  </SelectItem>
-                );
-              })}
-            </SelectGroup>
-            
-            <SelectSeparator />
-            
-            <SelectGroup>
-              <SelectLabel>International</SelectLabel>
-              {JURISDICTION_GROUPS.international.map(id => {
-                const jurisdiction = getJurisdictionById(id);
-                return jurisdiction && (
-                  <SelectItem key={id} value={id}>
-                    {jurisdiction.label}
-                  </SelectItem>
-                );
-              })}
-            </SelectGroup>
+            {/* Jurisdiction Groups */}
+            {Object.entries(JURISDICTION_GROUPS).map(([group, ids], index) => (
+              <SelectGroup key={group}>
+                <SelectLabel className="capitalize">
+                  {group.replace(/_/g, ' ')}
+                </SelectLabel>
+                {ids.map(id => {
+                  const jurisdiction = getJurisdictionById(id);
+                  return jurisdiction && (
+                    <SelectItem key={id} value={id}>
+                      {jurisdiction.label}
+                    </SelectItem>
+                  );
+                })}
+                {index < Object.entries(JURISDICTION_GROUPS).length - 1 && (
+                  <SelectSeparator />
+                )}
+              </SelectGroup>
+            ))}
 
-            {Object.entries(JURISDICTION_GROUPS)
-              .filter(([group]) => !['popular', 'international'].includes(group))
-              .map(([group, ids]) => (
-                <SelectGroup key={group}>
-                  <SelectLabel>{group.replace(/([A-Z])/g, ' $1').trim()}</SelectLabel>
-                  {ids.map(id => {
-                    const jurisdiction = getJurisdictionById(id);
-                    return jurisdiction && (
-                      <SelectItem key={id} value={id}>
-                        {jurisdiction.label}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectGroup>
-              ))}
-
+            {/* Custom Jurisdictions */}
             {Object.keys(customJurisdictions).length > 0 && (
               <>
                 <SelectSeparator />
                 <SelectGroup>
-                  <SelectLabel>Custom Jurisdictions</SelectLabel>
+                  <SelectLabel>Custom</SelectLabel>
                   {Object.entries(customJurisdictions).map(([id, label]) => (
-                    <SelectItem key={id} value={id}>
-                      {label}
-                    </SelectItem>
+                    <SelectItem key={id} value={id}>{label}</SelectItem>
                   ))}
                 </SelectGroup>
               </>
@@ -230,126 +194,164 @@ export function DocumentVariables({
     </div>
   );
 
-  return (
-    <Card className="p-6">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Document Variables</h3>
-          {PREDEFINED_VALUES[configKey as keyof typeof PREDEFINED_VALUES] && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  onClick={handleQuickFill}
-                  className="gap-2"
-                >
-                  <Wand2 className="h-4 w-4" />
-                  Quick Fill
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Auto-fill with suggested values</p>
-              </TooltipContent>
-            </Tooltip>
+  const renderDateField = (field: DocumentField) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !variables[field.key as keyof DocumentVariablesType] && "text-muted-foreground",
+            errors[field.id] && "border-destructive"
           )}
-        </div>
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {variables[field.key as keyof DocumentVariablesType] 
+            ? format(new Date(variables[field.key as keyof DocumentVariablesType] as string), 'PPP')
+            : "Select date"
+          }
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={variables[field.key as keyof DocumentVariablesType] 
+            ? new Date(variables[field.key as keyof DocumentVariablesType] as string)
+            : undefined
+          }
+          onSelect={(date) => handleFieldChange(field, date)}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
 
-        <div className="space-y-4">
-          {fields.map(field => (
-            <div key={field.id} className="space-y-2">
-              <Label htmlFor={field.id} className="flex items-center gap-2">
-                {field.label}
-                {field.required && <span className="text-destructive">*</span>}
-              </Label>
+  if (fields.length === 0) {
+    return (
+      <div className="w-full">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <p className="text-sm">
+            Document type "{documentType}" is not configured. Available types: {Object.keys(DOCUMENT_FIELDS_CONFIG).join(', ')}
+          </p>
+        </Alert>
+      </div>
+    );
+  }
 
-              {field.type === 'jurisdiction' ? (
-                renderJurisdictionField(field as JurisdictionField)
-              ) : field.type === 'textarea' ? (
-                <Textarea
-                  id={field.id}
-                  value={variables[field.key as keyof DocumentVariablesType] as string || ''}
-                  onChange={(e) => handleFieldChange(field, e.target.value)}
-                  placeholder={field.placeholder}
-                  className={cn(errors[field.id] && "border-destructive")}
-                />
-              ) : field.type === 'select' ? (
-                <Select
-                  value={variables[field.key as keyof DocumentVariablesType] as string || ''}
-                  onValueChange={(value) => handleFieldChange(field, value)}
+  return (
+    <div className="w-full">
+      <Card>
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h3 className="text-lg font-semibold">Document Variables</h3>
+            {PREDEFINED_VALUES[configKey as keyof typeof PREDEFINED_VALUES] && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    onClick={handleQuickFill}
+                    className="w-full sm:w-auto"
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Quick Fill
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Auto-fill with suggested values</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+
+          {/* Fields */}
+          <div className="space-y-6">
+            {fields.map((field) => (
+              <div key={field.id} className="space-y-2">
+                <Label 
+                  htmlFor={field.id}
+                  className="flex items-center gap-2"
                 >
-                  <SelectTrigger className={cn(errors[field.id] && "border-destructive")}>
-                    <SelectValue placeholder="Select an option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {field.options?.map(option => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : field.type === 'date' ? (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
+                  {field.label}
+                  {field.required && (
+                    <span className="text-destructive">*</span>
+                  )}
+                </Label>
+
+                {/* Field Input */}
+                <div className="w-full">
+                  {field.type === 'jurisdiction' ? (
+                    renderJurisdictionField(field as JurisdictionField)
+                  ) : field.type === 'textarea' ? (
+                    <Textarea
+                      id={field.id}
+                      value={variables[field.key as keyof DocumentVariablesType] as string || ''}
+                      onChange={(e) => handleFieldChange(field, e.target.value)}
+                      placeholder={field.placeholder}
                       className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !variables[field.key as keyof DocumentVariablesType] && "text-muted-foreground",
+                        "min-h-[100px]",
                         errors[field.id] && "border-destructive"
                       )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {variables[field.key as keyof DocumentVariablesType] 
-                        ? format(new Date(variables[field.key as keyof DocumentVariablesType] as string), 'PPP')
-                        : "Select date"
-                      }
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={variables[field.key as keyof DocumentVariablesType] 
-                        ? new Date(variables[field.key as keyof DocumentVariablesType] as string)
-                        : undefined
-                      }
-                      onSelect={(date) => handleFieldChange(field, date)}
-                      initialFocus
                     />
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <Input
-                  id={field.id}
-                  type="text"
-                  value={variables[field.key as keyof DocumentVariablesType] as string || ''}
-                  onChange={(e) => handleFieldChange(field, e.target.value)}
-                  placeholder={field.placeholder}
-                  className={cn(errors[field.id] && "border-destructive")}
-                />
-              )}
+                  ) : field.type === 'date' ? (
+                    renderDateField(field)
+                  ) : field.type === 'select' ? (
+                    <Select
+                      value={variables[field.key as keyof DocumentVariablesType] as string || ''}
+                      onValueChange={(value) => handleFieldChange(field, value)}
+                    >
+                      <SelectTrigger className={cn(errors[field.id] && "border-destructive")}>
+                        <SelectValue placeholder="Select an option" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options?.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id={field.id}
+                      type="text"
+                      value={variables[field.key as keyof DocumentVariablesType] as string || ''}
+                      onChange={(e) => handleFieldChange(field, e.target.value)}
+                      placeholder={field.placeholder}
+                      className={cn(errors[field.id] && "border-destructive")}
+                    />
+                  )}
+                </div>
 
-              {errors[field.id] && (
-                <p className="text-sm text-destructive">{errors[field.id]}</p>
-              )}
-            </div>
-          ))}
+                {/* Field Error */}
+                {errors[field.id] && (
+                  <p className="text-sm text-destructive">
+                    {errors[field.id]}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Validation Errors */}
+          {Object.keys(errors).length > 0 && (
+            <Alert variant="destructive" className="mt-6">
+              <AlertCircle className="h-4 w-4" />
+              <div className="ml-2">
+                <p className="font-medium">Please fix the following errors:</p>
+                <ul className="mt-2 list-disc pl-5 space-y-1">
+                  {Object.values(errors).map((error, index) => (
+                    <li key={index} className="text-sm">
+                      {error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Alert>
+          )}
         </div>
-
-        {Object.keys(errors).length > 0 && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <div className="ml-2">
-              <h4 className="font-medium">Please fix the following errors:</h4>
-              <ul className="mt-2 list-disc pl-5 text-sm">
-                {Object.values(errors).map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          </Alert>
-        )}
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }

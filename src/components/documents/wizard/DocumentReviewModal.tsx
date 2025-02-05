@@ -227,24 +227,22 @@ export function DocumentReviewModal({
   }
 };
 
-  function DocumentGenerationState() {
+function DocumentGenerationState() {
   return (
-    <div className="flex flex-col items-center justify-center h-full py-12">
-      {/* Animated SVG or Icon */}
-      <div className="relative mb-8">
+    <div className="flex flex-col items-center justify-center h-full py-6 md:py-12">
+      <div className="relative mb-6 md:mb-8">
         <div className="absolute inset-0 animate-ping rounded-full bg-primary/10" />
-        <div className="relative rounded-full bg-primary/10 p-8">
-          <FileText className="h-12 w-12 text-primary animate-pulse" />
+        <div className="relative rounded-full bg-primary/10 p-6 md:p-8">
+          <FileText className="h-8 w-8 md:h-12 md:w-12 text-primary animate-pulse" />
         </div>
       </div>
 
-      {/* Loading Steps */}
-      <div className="space-y-6 w-full max-w-sm">
-        <h3 className="text-center font-medium text-lg mb-6">
+      <div className="space-y-4 md:space-y-6 w-full max-w-sm px-4 md:px-0">
+        <h3 className="text-center font-medium text-base md:text-lg mb-4 md:mb-6">
           Generating Your Document
         </h3>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {[
             { label: "Processing party information", delay: "0s" },
             { label: "Applying document variables", delay: "1s" },
@@ -253,21 +251,20 @@ export function DocumentReviewModal({
           ].map((step, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 animate-fadeIn"
+              className="flex items-center gap-2 md:gap-3 animate-fadeIn"
               style={{ animationDelay: step.delay }}
             >
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+              <div className="h-6 w-6 md:h-8 md:w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-primary animate-ping" />
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs md:text-sm text-muted-foreground">
                 {step.label}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Progress Indicator */}
-        <div className="mt-8">
+        <div className="mt-6 md:mt-8">
           <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
             <div className="h-full bg-primary rounded-full w-0 animate-progress" />
           </div>
@@ -281,28 +278,29 @@ export function DocumentReviewModal({
 
   return (
     <>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-  <DialogTitle className="sr-only">
-    {isGenerating ? 'Document Generation' : 'Document Review'}
-  </DialogTitle>
+      <DialogContent className="max-w-[95vw] md:max-w-4xl max-h-[95vh] p-0 mx-4">
+        <DialogTitle className="sr-only">
+          {isGenerating ? 'Document Generation' : 'Document Review'}
+        </DialogTitle>
+        
         {showSubscriptionError ? (
-          <div className="h-full flex items-center justify-center p-8 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm">
+          <div className="h-full flex items-center justify-center p-4 md:p-8 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm">
             <div className="max-w-md w-full">
-              <div className="bg-white/70 backdrop-blur-md rounded-lg shadow-lg border border-gray-200/60 p-8 text-center">
-                <div className="h-12 w-12 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center mb-4 mx-auto">
-                  <AlertCircle className="h-6 w-6 text-gray-900" />
+              <div className="bg-white/70 backdrop-blur-md rounded-lg shadow-lg border border-gray-200/60 p-4 md:p-8 text-center">
+                <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center mb-3 md:mb-4 mx-auto">
+                  <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-gray-900" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 md:mb-3">
                   {error?.error?.message?.includes('Monthly generation limit reached') 
                     ? 'Monthly Limit Reached'
                     : 'Subscription Required'}
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">
                   {error?.error?.message?.includes('Monthly generation limit reached')
                     ? 'You have reached your monthly document generation limit. Upgrade your plan to generate more documents.'
                     : 'You need an active subscription to generate documents. Upgrade your plan to continue.'}
                 </p>
-                <div className="flex gap-3 items-center justify-center">
+                <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-stretch md:items-center justify-center">
                   <Button
                     size="lg"
                     className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm backdrop-blur-sm"
@@ -324,26 +322,26 @@ export function DocumentReviewModal({
           </div>
         ) : (
           <>
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle className="text-xl flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+            <DialogHeader className="p-4 md:p-6 pb-0">
+              <DialogTitle className="text-lg md:text-xl flex items-center gap-2">
+                <FileText className="h-4 w-4 md:h-5 md:w-5" />
                 {isGenerating ? 'Generating Document' : 'Document Review'}
               </DialogTitle>
             </DialogHeader>
-  
+
             {isGenerating ? (
               <DocumentGenerationState />
             ) : (
               <>
-                <div className="flex-1 px-6 py-4 overflow-y-auto" style={{ height: 'calc(90vh - 200px)' }}>
+                <div className="flex-1 px-4 md:px-6 py-3 md:py-4 overflow-y-auto" style={{ height: 'calc(95vh - 180px)' }}>
                   {errors.length > 0 && (
-                    <div className="mb-6">
-                      <Card className="bg-red-50 border-red-200 p-4">
+                    <div className="mb-4 md:mb-6">
+                      <Card className="bg-red-50 border-red-200 p-3 md:p-4">
                         <div className="flex items-center gap-2 text-red-600">
-                          <AlertCircle className="h-5 w-5" />
-                          <h4 className="font-medium">Please fix the following issues:</h4>
+                          <AlertCircle className="h-4 w-4 md:h-5 md:w-5" />
+                          <h4 className="font-medium text-sm md:text-base">Please fix the following issues:</h4>
                         </div>
-                        <ul className="mt-2 space-y-1 text-sm text-red-600 list-disc pl-5">
+                        <ul className="mt-2 space-y-1 text-xs md:text-sm text-red-600 list-disc pl-4 md:pl-5">
                           {errors.map((error, index) => (
                             <li key={index}>{error}</li>
                           ))}
@@ -351,56 +349,56 @@ export function DocumentReviewModal({
                       </Card>
                     </div>
                   )}
-  
-                  <section className="space-y-8">
+
+                  <section className="space-y-6 md:space-y-8">
                     <div>
-                      <h3 className="text-lg font-medium mb-4">Basic Information</h3>
-                      <Card className="p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">Document Type:</span>
-                          <Badge variant="secondary" className="text-base">
+                      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4">Basic Information</h3>
+                      <Card className="p-3 md:p-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                          <span className="text-sm md:text-base font-medium">Document Type:</span>
+                          <Badge variant="secondary" className="text-sm md:text-base w-fit">
                             {documentTypeUtils.toDisplayName(documentType)}
                           </Badge>
                         </div>
                       </Card>
                     </div>
-  
+
                     {hasParties && (
                       <div>
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                          <Users className="h-5 w-5" />
+                        <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 flex items-center gap-2">
+                          <Users className="h-4 w-4 md:h-5 md:w-5" />
                           Parties
                         </h3>
-                        <div className="grid gap-4">
+                        <div className="grid gap-3 md:gap-4">
                           {documentData.parties.map((party, index) => (
-                            <Card key={party.id || index} className="p-4 space-y-4">
-                              <div className="flex items-start justify-between">
+                            <Card key={party.id || index} className="p-3 md:p-4 space-y-3 md:space-y-4">
+                              <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
                                 <div>
-                                  <h4 className="font-medium">
+                                  <h4 className="font-medium text-sm md:text-base">
                                     {party.name || `Party ${index + 1}`}
                                   </h4>
                                   {party.email && (
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                      <Mail className="h-4 w-4" />
+                                    <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-muted-foreground mt-1">
+                                      <Mail className="h-3 w-3 md:h-4 md:w-4" />
                                       {party.email}
                                     </div>
                                   )}
                                 </div>
-                                <Badge variant="outline">
+                                <Badge variant="outline" className="text-xs md:text-sm w-fit">
                                   <Building2 className="h-3 w-3 mr-1" />
                                   {party.type}
                                 </Badge>
                               </div>
                               <Separator />
                               <div className="space-y-2">
-                                <div className="flex items-start gap-2">
-                                  <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                                  <div className="flex-1 text-sm">
+                                <div className="flex items-start gap-1.5 md:gap-2">
+                                  <MapPin className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground mt-1" />
+                                  <div className="flex-1 text-xs md:text-sm">
                                     {formatAddress(party.address)}
                                   </div>
                                 </div>
                                 {party.jurisdiction && (
-                                  <div className="text-sm pl-6">
+                                  <div className="text-xs md:text-sm pl-5 md:pl-6">
                                     <span className="text-muted-foreground">Jurisdiction:</span>{' '}
                                     {party.jurisdiction}
                                   </div>
@@ -411,43 +409,48 @@ export function DocumentReviewModal({
                         </div>
                       </div>
                     )}
-  
+
                     <div>
-                      <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5" />
+                      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 md:h-5 md:w-5" />
                         Document Details
                       </h3>
                       <Card className="divide-y">
                         {Object.entries(documentData.variables).map(([key, value]) => (
-                          <div key={key} className="p-4">
-                            <div className="text-sm font-medium text-muted-foreground mb-1">
+                          <div key={key} className="p-3 md:p-4">
+                            <div className="text-xs md:text-sm font-medium text-muted-foreground mb-1">
                               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </div>
-                            <div className="text-sm">{formatValue(key, value)}</div>
+                            <div className="text-xs md:text-sm">{formatValue(key, value)}</div>
                           </div>
                         ))}
                       </Card>
                     </div>
                   </section>
                 </div>
-  
-                <DialogFooter className="p-6 border-t mt-auto">
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <span className="text-sm text-muted-foreground">
+
+                <DialogFooter className="p-4 md:p-6 border-t mt-auto">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-3 md:gap-4">
+                    <span className="text-xs md:text-sm text-muted-foreground order-2 md:order-1">
                       Review your document details before generation
                     </span>
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" onClick={onClose} disabled={isDisabled}>
+                    <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto order-1 md:order-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={onClose} 
+                        disabled={isDisabled}
+                        className="flex-1 md:flex-none text-sm"
+                      >
                         Back to Edit
                       </Button>
                       <Button 
                         onClick={handleGenerate} 
                         disabled={isDisabled || errors.length > 0}
-                        className="min-w-[140px]"
+                        className="flex-1 md:flex-none min-w-0 md:min-w-[140px] text-sm"
                       >
                         {isGenerating ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-2 animate-spin" />
                             Generating...
                           </>
                         ) : (
@@ -462,7 +465,7 @@ export function DocumentReviewModal({
           </>
         )}
       </DialogContent>
-  
+
       <UpgradePlanModal
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
