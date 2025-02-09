@@ -35,6 +35,12 @@
 │   │   │   │   └── page.tsx
 │   │   │   └── register
 │   │   │       └── page.tsx
+│   │   ├── api
+│   │   │   ├── div
+│   │   │   └── geonames
+│   │   │       ├── [...path]
+│   │   │       │   └── route.ts
+│   │   │       └── maf
 │   │   ├── dashboard
 │   │   │   ├── DocumentPreview.tsx
 │   │   │   ├── layout.tsx
@@ -71,6 +77,11 @@
 │   │   ├── layout.tsx
 │   │   ├── not-found.tsx
 │   │   ├── page.tsx
+│   │   ├── quick-documents
+│   │   │   ├── create
+│   │   │   │   └── page.tsx
+│   │   │   ├── creates
+│   │   │   └── layout.tsx
 │   │   ├── settings
 │   │   │   ├── QuickStats.tsx
 │   │   │   ├── SettingsClient.tsx
@@ -94,6 +105,7 @@
 │   │       ├── layout.tsx
 │   │       └── page.tsx
 │   ├── components
+│   │   ├── ErrorBoundary.tsx
 │   │   ├── auth
 │   │   │   ├── LoginForm.tsx
 │   │   │   ├── RegisterForm.tsx
@@ -131,6 +143,7 @@
 │   │   │   │   └── VariableForm.tsx
 │   │   │   ├── ui
 │   │   │   │   ├── DocumentSettingsModal.tsx
+│   │   │   │   ├── DocumentTypeDialog.tsx
 │   │   │   │   ├── WizardSteps.tsx
 │   │   │   │   └── custom-modal.tsx
 │   │   │   └── wizard
@@ -157,6 +170,8 @@
 │   │   │   └── LandingLayout.tsx
 │   │   ├── payment
 │   │   │   └── PaymentResult.tsx
+│   │   ├── quick-documents
+│   │   │   └── StepIndicator.tsx
 │   │   └── ui
 │   │       ├── alert-dialog.tsx
 │   │       ├── alert.tsx
@@ -166,6 +181,7 @@
 │   │       ├── calendar.tsx
 │   │       ├── card.tsx
 │   │       ├── checkbox.tsx
+│   │       ├── collapsible.tsx
 │   │       ├── color-picker.tsx
 │   │       ├── combobox.tsx
 │   │       ├── command.tsx
@@ -201,8 +217,10 @@
 │   │   ├── useLocation.ts
 │   │   ├── useNotifications.ts
 │   │   ├── usePayment.ts
+│   │   ├── useQuickDocument.ts
 │   │   ├── useSupport.ts
 │   │   ├── useUser.ts
+│   │   ├── useViewport.tsx
 │   │   └── useWizardNavigation.ts
 │   ├── lib
 │   │   ├── api
@@ -213,6 +231,7 @@
 │   │   │   ├── middleware.ts
 │   │   │   ├── notification.ts
 │   │   │   ├── payment.ts
+│   │   │   ├── quickDocument.ts
 │   │   │   ├── support.ts
 │   │   │   ├── user.ts
 │   │   │   └── waitlist.ts
@@ -241,6 +260,7 @@
 │       ├── notification.ts
 │       ├── party.ts
 │       ├── payment.ts
+│       ├── quickDocument.ts
 │       ├── support.ts
 │       ├── template.ts
 │       └── user.ts
@@ -248,4 +268,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-56 directories, 193 files
+62 directories, 207 files

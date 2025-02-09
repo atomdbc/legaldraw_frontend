@@ -23,7 +23,7 @@ import {
   Edit2, 
   ChevronLeft,
   Settings,
-  ExternalLink,
+  Printer,
   CheckCircle 
 } from 'lucide-react';
 
@@ -177,6 +177,70 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     }
   };
 
+  const handlePrint = () => {
+    if (!content) return;
+  
+    // Create a new window
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Print Document</title>
+            <style>
+              @page {
+                margin: 0.5in;
+                size: auto;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                background: white;
+                font-family: "Times New Roman", Times, serif;
+              }
+              .page {
+                width: 100%;
+                margin: 0 auto;
+                padding: 0;
+                box-shadow: none;
+              }
+              @media print {
+                body {
+                  padding: 0 !important;
+                  margin: 0 !important;
+                }
+                .page {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  box-shadow: none !important;
+                }
+                * {
+                  -webkit-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${content}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+  
+      // Wait for content to load before printing
+      printWindow.onload = function() {
+        printWindow.focus();
+        printWindow.print();
+        // Close the window after printing
+        setTimeout(() => {
+          printWindow.close();
+        }, 1000);
+      };
+    }
+  };
   // Style iframe content
   useEffect(() => {
     const iframe = previewIframeRef.current;
@@ -213,6 +277,26 @@ export default function DocumentPage({ params }: DocumentPageProps) {
             p, ul, ol {
               line-height: 1.6;
               margin-bottom: 1em;
+            }
+            @media print {
+              @page {
+                margin: 0.5in;
+              }
+              body {
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              .page {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                max-width: none !important;
+              }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
             }
           `;
           doc.head.appendChild(style);
@@ -308,25 +392,37 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           </div>
           
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="min-w-[120px]"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {isDownloading ? 'Downloading...' : 'Download'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '/settings'}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          </div>
+          {document.document_type?.toLowerCase().includes('quick') ? (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={handlePrint}
+    className="min-w-[120px]"
+  >
+    <Printer className="h-4 w-4 mr-2" />
+    Print
+  </Button>
+) : (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={handleDownload}
+    disabled={isDownloading}
+    className="min-w-[120px]"
+  >
+    <Download className="h-4 w-4 mr-2" />
+    {isDownloading ? 'Downloading...' : 'Download'}
+  </Button>
+)}
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => window.location.href = '/settings'}
+  >
+    <Settings className="h-4 w-4 mr-2" />
+    Settings
+  </Button>
+</div>
         </div>
       </header>
 
@@ -441,12 +537,12 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           <div className="absolute inset-0">
             {content ? (
               <iframe
-                ref={previewIframeRef}
-                srcDoc={content}
-                title="Document Preview"
-                className="w-full h-full border-0 bg-white"
-                sandbox="allow-same-origin"
-              />
+              ref={previewIframeRef}
+              srcDoc={content}
+              title="Document Preview"
+              className="w-full h-full border-0 bg-white"
+              sandbox="allow-same-origin allow-modals allow-popups allow-scripts"
+            />
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">

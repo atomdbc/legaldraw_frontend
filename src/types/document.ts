@@ -23,7 +23,7 @@ export interface NDAVariables {
 
 export interface ServiceVariables {
   service_description: string;
-  service_scope: string;
+  service_description: string;
   service_category: string;
   payment_terms: string;
   delivery_timeline: string;
@@ -225,8 +225,8 @@ export const DOCUMENT_FIELDS_CONFIG: DocumentFieldsConfig = {
       aiAssisted: true
     } as TextareaDocumentField,
     {
-      id: 'service_scope',
-      key: 'service_scope',
+      id: 'service_description',
+      key: 'service_description',
       label: 'Scope of Services',
       type: 'select',
       description: 'Define the scope of services covered',
@@ -442,7 +442,7 @@ export const PREDEFINED_VALUES = {
   },
   service: {
     service_description: 'Development and implementation of custom software solutions',
-    service_scope: 'Full service implementation and support',
+    service_description: 'Full service implementation and support',
     service_category: 'development',
     payment_terms: 'Monthly retainer',
     delivery_timeline: 'Phased delivery',

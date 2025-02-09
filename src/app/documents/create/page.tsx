@@ -3,12 +3,89 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
 import DocumentTypeSelector from "@/components/documents/wizard/DocumentTypeSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useDocumentProgress } from "@/hooks/useDocumentProgress";
 import { isValidDocumentType } from "@/lib/utils/documentTypes";
-import { Loader2, ArrowLeft, HelpCircle } from "lucide-react";
+import { Loader2, ArrowLeft, HelpCircle, Zap, ScrollText } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+function GenerationTypeDialog({ 
+  isOpen, 
+  onClose, 
+  onSelectType, 
+  documentType,
+  isLoading 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSelectType: (type: 'quick' | 'detailed') => void;
+  documentType: string;
+  isLoading: boolean;
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Choose Generation Type</DialogTitle>
+          <DialogDescription>
+            Select how you would like to generate your document
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <Card 
+            className="p-4 cursor-pointer hover:border-primary transition-colors"
+            onClick={() => onSelectType('quick')}
+          >
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="p-3 rounded-full bg-primary/10 text-primary">
+                <Zap className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Quick Generation</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Fast, simple process with essential fields. Perfect for standard agreements.
+                </p>
+              </div>
+              <div className="text-xs bg-secondary px-2 py-1 rounded">
+                ~1 min generation time
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-4 cursor-pointer hover:border-primary transition-colors"
+            onClick={() => onSelectType('detailed')}
+          >
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="p-3 rounded-full bg-primary/10 text-primary">
+                <ScrollText className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Detailed Generation</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Comprehensive process with advanced legal options. Ideal for legal professionals.
+                </p>
+              </div>
+              <div className="text-xs bg-secondary px-2 py-1 rounded">
+                ~2 min generation time
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function CreateDocumentPage() {
   const router = useRouter();
@@ -17,6 +94,7 @@ export default function CreateDocumentPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [showGenerationDialog, setShowGenerationDialog] = useState(false);
 
   const handleTypeSelect = (typeId: string) => {
     if (!isValidDocumentType(typeId)) {
@@ -30,7 +108,7 @@ export default function CreateDocumentPage() {
     setSelectedType(typeId);
   };
 
-  const handleContinue = async () => {
+  const handleGenerationTypeSelect = async (generationType: 'quick' | 'detailed') => {
     if (!selectedType) return;
 
     setIsLoading(true);
@@ -41,9 +119,16 @@ export default function CreateDocumentPage() {
         data: {
           created_at: new Date().toISOString(),
           type: selectedType,
+          generation_type: generationType
         }
       });
-      router.push(`/documents/create/${selectedType}/parties`);
+
+      // Route based on generation type
+      if (generationType === 'quick') {
+        router.push(`/quick-documents/create?type=${selectedType}`);
+      } else {
+        router.push(`/documents/create/${selectedType}/parties`);
+      }
     } catch (error) {
       console.error('Error starting document creation:', error);
       toast({
@@ -53,7 +138,13 @@ export default function CreateDocumentPage() {
       });
     } finally {
       setIsLoading(false);
+      setShowGenerationDialog(false);
     }
+  };
+
+  const handleContinue = () => {
+    if (!selectedType) return;
+    setShowGenerationDialog(true);
   };
 
   const handleCancel = () => {
@@ -69,8 +160,8 @@ export default function CreateDocumentPage() {
       <ol className="space-y-4 md:space-y-6">
         {[
           'Select your document type from the available options',
-          'Add the parties involved in the agreement',
-          'Fill in the required document details',
+          'Choose between quick or detailed generation',
+          'Fill in the required information',
           'Review and generate your document'
         ].map((step, index) => (
           <li key={index} className="flex gap-3 md:gap-4">
@@ -171,6 +262,15 @@ export default function CreateDocumentPage() {
           <GuideContent />
         </div>
       </div>
+
+      {/* Generation Type Dialog */}
+      <GenerationTypeDialog 
+        isOpen={showGenerationDialog}
+        onClose={() => setShowGenerationDialog(false)}
+        onSelectType={handleGenerationTypeSelect}
+        documentType={selectedType || ''}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

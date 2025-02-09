@@ -15,11 +15,13 @@ const publicPaths = [
 const authRequiredPaths = [
   '/dashboard',
   '/documents',
-  '/settings'
+  '/settings',
+  '/quick-documents',
+  '/quick-documents/create',
 ];
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
 
   // Allow public assets and API routes
   if (
@@ -49,6 +51,14 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Quick documents type validation
+  if (pathname === '/quick-documents/create') {
+    const type = searchParams.get('type');
+    if (!type || !DOCUMENT_TYPES.includes(type as any)) {
+      return NextResponse.redirect(new URL('/quick-documents', request.url));
+    }
+  }
+
   // Check if the path is public
   if (publicPaths.some(path => pathname === path)) {
     const token = request.cookies.get('accessToken')?.value;
@@ -72,13 +82,18 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('accessToken')?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      const loginUrl = new URL('/login', request.url);
+      // Preserve the original URL as a redirect parameter
+      loginUrl.searchParams.set('redirect', request.url);
+      return NextResponse.redirect(loginUrl);
     }
 
     try {
       const decoded = jwtDecode(token);
       if (!decoded || !decoded.exp || decoded.exp <= Date.now() / 1000) {
-        return NextResponse.redirect(new URL('/login', request.url));
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('redirect', request.url);
+        return NextResponse.redirect(loginUrl);
       }
     } catch (error) {
       return NextResponse.redirect(new URL('/login', request.url));
@@ -91,6 +106,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico).*)',
-    '/documents/create/:type*'
+    '/documents/create/:type*',
+    '/quick-documents/create'
   ]
 };

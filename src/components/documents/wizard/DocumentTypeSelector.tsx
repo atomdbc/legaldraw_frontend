@@ -63,6 +63,7 @@ const categories = ['All', 'Essential', 'Business'];
 export default function DocumentTypeSelector({ onSelect, selectedType }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  
 
   const filteredDocs = documentTypes.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
