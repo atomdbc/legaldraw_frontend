@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useQuickDocument } from '@/hooks/useQuickDocument';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
@@ -37,6 +36,8 @@ interface ProgressData {
   serviceDetails?: any;
   employmentDetails?: any;
 }
+
+
 
 function getStepsForType(type: string) {
   switch (type) {
@@ -77,7 +78,18 @@ function LimitReachedDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   );
 }
 
-export default function QuickDocumentCreatePage() {
+function LoadingFallback() {
+  return (
+    <div className="min-h-[calc(100vh-4rem)] bg-muted/5 flex items-center justify-center">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span>Loading...</span>
+      </div>
+    </div>
+  );
+}
+
+function QuickDocumentContent(){
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawType = searchParams.get('type')?.toLowerCase() || 'nda';
@@ -146,6 +158,9 @@ export default function QuickDocumentCreatePage() {
     termination_notice: '',
     dispute_resolution: ''
   });
+
+  
+  
 
   // Effects for saving/loading progress
   useEffect(() => {
@@ -259,6 +274,7 @@ export default function QuickDocumentCreatePage() {
     }
     return true;
   };
+  
   
 
   const handleNext = () => {
@@ -797,4 +813,11 @@ export default function QuickDocumentCreatePage() {
     />
   </div>
 );
+}
+export default function QuickDocumentCreatePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <QuickDocumentContent />
+    </Suspense>
+  );
 }
