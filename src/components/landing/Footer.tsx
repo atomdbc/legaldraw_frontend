@@ -111,8 +111,8 @@ export const Footer = () => {
               {
                 title: "Legal",
                 links: [
-                  { label: "Privacy", href: "#privacy" },
-                  { label: "Terms", href: "#terms" },
+                  { label: "Privacy", href: "https://j4opv4xvh6.execute-api.us-east-1.amazonaws.com/dev/policy" },
+                  { label: "Terms", href: "https://j4opv4xvh6.execute-api.us-east-1.amazonaws.com/dev/terms" },
                   { label: "Security", href: "#security" },
                   { label: "GDPR", href: "#gdpr" },
                   { label: "Cookies", href: "#cookies" }
