@@ -123,7 +123,7 @@ interface PriceConfig {
 const priceConfig: PriceConfig[] = [
   {
     type: PlanType.PER_DOCUMENT,
-    basePrice: 2,
+    basePrice: 1,
     description: "Pay as you go",
     icon: FileText
   },

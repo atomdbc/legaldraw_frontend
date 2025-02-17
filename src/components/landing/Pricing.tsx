@@ -137,7 +137,7 @@ export const Pricing = () => {
             </div>
             <div className="mb-6">
               <div className="text-3xl font-bold text-gray-900">
-                {currency.symbol}{getPrice(2)}
+                {currency.symbol}{getPrice(1)}
               </div>
               <div className="text-gray-600">per document</div>
             </div>

@@ -273,10 +273,10 @@ const UserMenu = ({ userData, handleLogout, isCollapsed }: {
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings/profile">Profile Settings</Link>
+          <Link href="/settings">Profile Settings</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings/billing">Billing & Plans</Link>
+          <Link href="/settings">Billing & Plans</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
