@@ -55,31 +55,33 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-        >
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'AW-11012304824');
-          `}
-        </Script>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-11012304824"
-          strategy="afterInteractive"
-        />
-        <TooltipProvider>
-          <AuthProvider>
-            <main>
-              {children}
-            </main>
-            <Toaster /> {/* Add this line */}
-          </AuthProvider>
-        </TooltipProvider>
-      </body>
+      <body className={`${inter.className} antialiased`}>
+  <div className="min-h-screen bg-background">
+    <Script
+      id="google-analytics"
+      strategy="afterInteractive"
+    >
+      {`
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-11012304824');
+      `}
+    </Script>
+    <Script
+      src="https://www.googletagmanager.com/gtag/js?id=AW-11012304824"
+      strategy="afterInteractive"
+    />
+    <TooltipProvider>
+      <AuthProvider>
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Toaster />
+      </AuthProvider>
+    </TooltipProvider>
+  </div>
+</body>
     </html>
   )
 }
