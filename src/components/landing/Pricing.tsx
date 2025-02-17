@@ -21,7 +21,7 @@ const currencies = [
   { code: "USD", symbol: "$", rate: 1 },
   { code: "EUR", symbol: "€", rate: 0.92 },
   { code: "GBP", symbol: "£", rate: 0.79 },
-  { code: "INR", symbol: "₹", rate: 83 },
+  { code: "INR", symbol: "₹", rate: 87 },
 ];
 
 const features = {
