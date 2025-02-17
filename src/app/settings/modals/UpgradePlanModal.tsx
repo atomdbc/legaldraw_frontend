@@ -25,6 +25,7 @@ import {
 import { usePayment } from '@/hooks/usePayment';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { PaymentCreateRequest } from '@/types/payment';
 
 export enum PlanType {
   PER_DOCUMENT = "per document",
@@ -37,7 +38,7 @@ export enum Currency {
   USD = "USD",
   EUR = "EUR",
   GBP = "GBP",
-  NGN = "NGN"
+  INR = "INR"
 }
 
 export enum BillingCycle {
@@ -70,7 +71,7 @@ const currencies = [
   { code: Currency.USD, symbol: "$", rate: 1 },
   { code: Currency.EUR, symbol: "€", rate: 0.92 },
   { code: Currency.GBP, symbol: "£", rate: 0.79 },
-  { code: Currency.NGN, symbol: "₦", rate: 1500 }
+  { code: Currency.INR, symbol: "₹", rate: 174 } 
 ];
 
 const features = {
@@ -189,22 +190,25 @@ export function UpgradePlanModal({
       const finalPrice = basePrice * selectedCurrency.rate;
       const isSubscription = type !== PlanType.PER_DOCUMENT;
       
-      const paymentData: PaymentCreate = {
+      const paymentData: PaymentCreateRequest = {
         amount: isSubscription && billingCycle === BillingCycle.ANNUAL 
-          ? finalPrice * 12 * 0.8 
+          ? finalPrice * 12 * 0.8  // 20% annual discount
           : finalPrice,
         currency: selectedCurrency.code,
         plan_id: type,
-        payment_type: isSubscription ? "subscription" : "one_time",
+        payment_type: isSubscription ? 'subscription' : 'one_time',
         payment_metadata: {
           billing_cycle: billingCycle,
-          currency_rate: selectedCurrency.rate
+          currency_rate: selectedCurrency.rate,
+          is_annual: billingCycle === BillingCycle.ANNUAL
         }
       };
-
+  
       const response = await createPayment(paymentData);
-      if (response?.payment_metadata?.payment_link) {
-        window.location.href = response.payment_metadata.payment_link;
+      
+      // Check for Stripe session URL in payment metadata
+      if (response?.payment_metadata?.checkout_url) {
+        window.location.href = response.payment_metadata.checkout_url;
       }
     } catch (error) {
       toast({
@@ -365,7 +369,7 @@ export function UpgradePlanModal({
                       )}
                       disabled={loading === config.type || currentPlan?.plan.name === config.type}
                       onClick={() => config.type === PlanType.ENTERPRISE 
-                        ? window.location.href = "mailto:sales@legaldraw.com"
+                        ? window.location.href = "mailto:sales@Docwelo.com"
                         : handleUpgrade(config.type, config.basePrice)
                       }
                     >
@@ -396,13 +400,13 @@ export function UpgradePlanModal({
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               <span className="text-xs md:text-sm text-gray-500">
-                Secure payment powered by Flutterwave
+                Secure payment powered by Stripe
               </span>
             </div>
             
             <Button variant="link" className="h-auto p-0 text-xs md:text-sm" asChild>
               <a 
-                href="mailto:sales@legaldraw.com"
+                href="mailto:sales@Docwelo.com"
                 className="inline-flex items-center gap-2 text-black hover:text-gray-600"
               >
                 <Mail className="w-3 h-3 md:w-4 md:h-4" />

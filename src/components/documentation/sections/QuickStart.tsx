@@ -125,7 +125,7 @@ export function QuickStartSection() {
             Create Your First Document
           </h1>
           <p className="text-xl text-muted-foreground">
-            Get started with LegalDraw in minutes. Follow our step-by-step guide to create
+            Get started with Docwelo in minutes. Follow our step-by-step guide to create
             your first professional document.
           </p>
           
@@ -150,7 +150,7 @@ export function QuickStartSection() {
           <CardContent>
             <ul className="grid md:grid-cols-2 gap-4">
               {[
-                "A LegalDraw account",
+                "A Docwelo account",
                 "Basic party information",
                 "Document requirements",
                 "Necessary references"

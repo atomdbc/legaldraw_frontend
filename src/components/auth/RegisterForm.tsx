@@ -7,7 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { 
+  Loader2, 
+  Building2, 
+  Mail, 
+  User,
+  ArrowLeft
+} from 'lucide-react';
 
 type FormData = {
   email: string;
@@ -17,7 +23,7 @@ type FormData = {
 
 export function RegisterForm() {
   const router = useRouter();
-  const { register, verifyLoginOTP } = useAuth();  // Changed to use verifyLoginOTP like login form
+  const { register, verifyLoginOTP } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     fullName: '',
@@ -50,16 +56,15 @@ export function RegisterForm() {
     } finally {
       setLoading(false);
     }
-};
+  };
+
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Using verifyLoginOTP instead of verifyEmail
       await verifyLoginOTP(formData.email, otp);
-      // The verifyLoginOTP function will handle the redirect to dashboard
     } catch (err: any) {
       console.error('Verification error:', err);
       setError(err?.error?.message || 'Invalid verification code. Please try again.');
@@ -78,19 +83,19 @@ export function RegisterForm() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-gray-900">
           {showOTPInput ? 'Verify your email' : 'Create your account'}
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-gray-500">
           {showOTPInput 
             ? `Enter the verification code sent to ${formData.email}`
-            : 'Enter your details to get started with LegalDraw AI'}
+            : 'Start creating perfect documents with Docwelo AI'}
         </p>
       </div>
 
       {!showOTPInput ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -100,50 +105,59 @@ export function RegisterForm() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full name</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                />
+                <Label htmlFor="fullName" className="text-gray-700">Full name</Label>
+                <div className="relative">
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    placeholder="John Doe"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    className="pl-10"
+                    required
+                  />
+                  <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="organization">Organization</Label>
-                <Input
-                  id="organization"
-                  name="organization"
-                  placeholder="Legal Firm LLC"
-                  value={formData.organization}
-                  onChange={handleChange}
-                  required
-                />
+                <Label htmlFor="organization" className="text-gray-700">Organization</Label>
+                <div className="relative">
+                  <Input
+                    id="organization"
+                    name="organization"
+                    placeholder="Legal Firm LLC"
+                    value={formData.organization}
+                    onChange={handleChange}
+                    className="pl-10"
+                    required
+                  />
+                  <Building2 className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Work email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="name@company.com"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-              <p className="text-xs text-zinc-500">
-                We'll send you a verification code to this email
-              </p>
+              <Label htmlFor="email" className="text-gray-700">Work email</Label>
+              <div className="relative">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+                <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+              </div>
             </div>
           </div>
 
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full bg-[#4361EE] hover:bg-[#3651D4] text-white" 
             size="lg"
             disabled={loading}
           >
@@ -158,37 +172,39 @@ export function RegisterForm() {
           </Button>
         </form>
       ) : (
-        <form onSubmit={handleVerifyOTP} className="space-y-4">
+        <form onSubmit={handleVerifyOTP} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           {info && (
-            <Alert>
+            <Alert className="bg-[#4361EE]/10 text-[#4361EE] border-[#4361EE]/20">
               <AlertDescription>{info}</AlertDescription>
             </Alert>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="otp">Verification Code</Label>
+          <div className="space-y-4">
             <Input
               id="otp"
               type="text"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter the 6-digit code"
+              placeholder="Enter 6-digit code"
               required
               maxLength={6}
               pattern="\d{6}"
-              className="w-full"
+              className="text-center text-lg"
             />
+            <p className="text-sm text-gray-500 text-center">
+              Didn't receive the code? <Button variant="link" className="px-1 h-auto text-[#4361EE]">Resend</Button>
+            </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-[#4361EE] hover:bg-[#3651D4] text-white"
               size="lg"
               disabled={loading}
             >
@@ -198,12 +214,13 @@ export function RegisterForm() {
                   Verifying...
                 </>
               ) : (
-                'Verify Code'
+                'Complete Registration'
               )}
             </Button>
+            
             <Button
               type="button"
-              variant="link"
+              variant="ghost"
               className="w-full"
               onClick={() => {
                 setShowOTPInput(false);
@@ -213,15 +230,20 @@ export function RegisterForm() {
               }}
               disabled={loading}
             >
-              Back to registration
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
             </Button>
           </div>
         </form>
       )}
 
-      <div className="text-center text-sm text-zinc-500">
+      <div className="text-center text-sm text-gray-500">
         Already have an account?{' '}
-        <Button variant="link" className="px-0" onClick={() => router.push('/login')}>
+        <Button 
+          variant="link" 
+          className="px-1 h-auto text-[#4361EE]" 
+          onClick={() => router.push('/login')}
+        >
           Sign in
         </Button>
       </div>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50">
+  <rect x="20" y="10" width="40" height="30" rx="5" fill="none" stroke="#4361EE" stroke-width="2"/>
+  <path d="M70 25h100" stroke="#4361EE" stroke-width="2"/>
+  <text x="75" y="32" font-family="Arial" font-weight="bold" font-size="18" fill="#4361EE">LEADERS</text>
+</svg>

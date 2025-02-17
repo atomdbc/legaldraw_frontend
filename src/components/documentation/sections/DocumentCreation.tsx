@@ -55,7 +55,7 @@ export function DocumentCreationSection() {
         <div>
           <h1 className="text-4xl font-bold mb-4">Document Creation Process</h1>
           <p className="text-xl text-muted-foreground">
-            Learn how to create, manage, and finalize documents using LegalDraw's AI-powered platform.
+            Learn how to create, manage, and finalize documents using Docwelo's AI-powered platform.
           </p>
         </div>
 

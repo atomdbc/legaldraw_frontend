@@ -83,7 +83,7 @@ export function IntroductionSection() {
         {/* Hero Section */}
         <div className="text-center py-8">
           <h1 className="text-4xl font-bold mb-4">
-            Welcome to LegalDraw AI
+            Welcome to Docwelo
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             The next generation of AI-powered legal document generation and management
@@ -122,13 +122,13 @@ export function IntroductionSection() {
         {/* Mission Statement */}
         <DocHeading>Our Mission</DocHeading>
         <p>
-          LegalDraw AI is revolutionizing the way legal documents are created and managed. 
+        Docwelo AI is revolutionizing the way legal documents are created and managed. 
           Our mission is to make professional legal document generation accessible, efficient, 
           and intelligent through the power of artificial intelligence.
         </p>
 
         <DocNote>
-          LegalDraw is not a law firm and does not provide legal advice. While our AI helps generate 
+        Docwelo is not a law firm and does not provide legal advice. While our AI helps generate 
           legally-sound documents, we recommend reviewing important documents with legal professionals.
         </DocNote>
 
@@ -213,7 +213,7 @@ export function IntroductionSection() {
             <CardContent className="pt-6">
               <h3 className="font-medium mb-2">API Access</h3>
               <p className="text-sm text-muted-foreground">
-                Integrate LegalDraw's document generation capabilities into your own applications.
+                Integrate Docwelo's document generation capabilities into your own applications.
               </p>
             </CardContent>
           </Card>

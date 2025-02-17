@@ -1,44 +1,67 @@
-export type Currency = 'NGN' | 'USD';
-export type PaymentStatus = 'pending' | 'successful' | 'failed';
-export type PlanType = 'PER_DOCUMENT' | 'BASIC' | 'PROFESSIONAL';
+export type Currency = 'USD' | 'EUR' | 'GBP' | 'INR';
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  SUCCESSFUL = 'successful',
+  FAILED = 'failed'
+}
+
+export type PlanType = 'PER_DOCUMENT' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
 export interface PaymentCreateRequest {
   amount: number;
-  currency: Currency;
-  user_plan_id: string;
-  payment_type?: string;
-  payment_metadata?: Record<string, any>;
+  currency: string;
+  plan_id: string;
+  payment_type: 'subscription' | 'one_time';
+  payment_metadata?: {
+    billing_cycle?: 'monthly' | 'annual';
+    currency_rate?: number;
+    is_annual?: boolean;
+  };
 }
 
 
-export interface PaymentCreate {
-  amount: number;
-  currency: Currency;
-  plan_id: string;
-  payment_type?: string;
-  payment_metadata?: {
-      upgrade_from?: string;
-      plan_name?: string;
-      billing_cycle?: string;
-      is_annual?: boolean;
-      currency_rate?: number;
-      original_price?: number;
-      currency_code?: string;
+
+export interface SubscriptionDetails {
+  id: string;
+  status: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  auto_renew: boolean;
+}
+
+export interface PaymentMetadata {
+  checkout_url?: string;
+  stripe_session?: {
+    id: string;
+    url: string;
+  };
+  subscription?: SubscriptionDetails;
+  billing_cycle?: string;
+  is_annual?: boolean;
+  product_description?: string;
+  verification_data?: {
+    status?: string;
+    payment_status?: string;
   };
 }
 
 export interface PaymentResponse {
   id: string;
-  tx_ref: string;
+  user_id: string;
+  user_plan_id: string;
   amount: number;
-  currency: Currency;
-  status: PaymentStatus;
-  payment_type?: string;
-  flw_transaction_id?: string;
-  payment_metadata?: Record<string, any>;
+  currency: string;
+  status: string;
+  payment_type: string;
+  stripe_session_id: string;
+  payment_metadata?: PaymentMetadata;
   created_at: string;
   updated_at?: string;
 }
+
+
+
 
 export interface PaymentListResponse {
   data: PaymentResponse[];

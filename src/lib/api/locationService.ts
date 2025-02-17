@@ -1,6 +1,6 @@
 const BASE_API_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:3000'  // Your Next.js dev server port
-  : 'https://legaldraw.com'; // Your production domain
+  : 'https://docrafty.com'; // Your production domain
 
 const GEONAMES_USERNAME = process.env.NEXT_PUBLIC_GEONAMES_USERNAME;
 

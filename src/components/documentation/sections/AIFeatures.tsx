@@ -99,13 +99,13 @@ export function AIFeaturesSection() {
         <div>
           <h1 className="text-4xl font-bold mb-4">AI Features</h1>
           <p className="text-xl text-muted-foreground">
-            Discover how LegalDraw's AI enhances document creation and management.
+            Discover how Docwelo's AI enhances document creation and management.
           </p>
         </div>
 
         {/* AI Overview */}
         <DocNote>
-          LegalDraw leverages advanced AI models to simplify document creation while ensuring
+        Docwelo leverages advanced AI models to simplify document creation while ensuring
           legal accuracy and compliance. Our AI systems are continuously trained on vast legal
           datasets while maintaining strict privacy and security standards.
         </DocNote>

@@ -7,7 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { 
+  Loader2, 
+  Mail, 
+  ArrowLeft,
+  KeyRound
+} from 'lucide-react';
 
 export function LoginForm() {
   const router = useRouter();
@@ -28,7 +33,6 @@ export function LoginForm() {
 
     try {
       const response = await requestLoginOTP(email);
-      // Check response from backend
       if (response?.status === 'needs_verification') {
         setInfo('Please verify your email first. We\'ve sent you a new verification code.');
         setIsVerification(true);
@@ -36,7 +40,7 @@ export function LoginForm() {
       setShowOTPInput(true);
     } catch (err: any) {
       console.error('OTP request error:', err);
-      setError(err?.error?.message || 'Failed to send OTP. Please try again.');
+      setError(err?.error?.message || 'Failed to send code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -49,13 +53,11 @@ export function LoginForm() {
 
     try {
       if (isVerification) {
-        // Handle email verification
         await verifyEmail(email, otp);
         setInfo('Email verified successfully! You can now log in.');
         setShowOTPInput(false);
         setIsVerification(false);
       } else {
-        // Handle normal login
         await verifyLoginOTP(email, otp);
       }
     } catch (err: any) {
@@ -68,8 +70,19 @@ export function LoginForm() {
 
   return (
     <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {showOTPInput ? 'Enter verification code' : 'Welcome back'}
+        </h1>
+        <p className="text-sm text-gray-500">
+          {showOTPInput 
+            ? `We've sent a code to ${email}`
+            : 'Sign in to your workspace'}
+        </p>
+      </div>
+
       {!showOTPInput ? (
-        <form onSubmit={handleRequestOTP} className="space-y-4">
+        <form onSubmit={handleRequestOTP} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -77,21 +90,24 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@company.com"
-              required
-              className="w-full"
-            />
+            <Label htmlFor="email" className="text-gray-700">Email address</Label>
+            <div className="relative">
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@company.com"
+                required
+                className="pl-10"
+              />
+              <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+            </div>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
+          <Button 
+            type="submit" 
+            className="w-full bg-[#4361EE] hover:bg-[#3651D4] text-white" 
             size="lg"
             disabled={loading}
           >
@@ -101,59 +117,63 @@ export function LoginForm() {
                 Sending code...
               </>
             ) : (
-              'Request Code'
+              'Continue with Email'
             )}
           </Button>
         </form>
       ) : (
-        <form onSubmit={handleSubmitOTP} className="space-y-4">
+        <form onSubmit={handleSubmitOTP} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           {info && (
-            <Alert>
+            <Alert className="bg-[#4361EE]/10 text-[#4361EE] border-[#4361EE]/20">
               <AlertDescription>{info}</AlertDescription>
             </Alert>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="otp">
-              {isVerification ? 'Verification Code' : 'Login Code'}
-            </Label>
-            <Input
-              id="otp"
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter the 6-digit code"
-              required
-              maxLength={6}
-              pattern="\d{6}"
-              className="w-full"
-            />
+          <div className="space-y-4">
+            <div className="relative">
+              <Input
+                id="otp"
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="Enter 6-digit code"
+                required
+                maxLength={6}
+                pattern="\d{6}"
+                className="pl-10 text-center text-lg"
+              />
+              <KeyRound className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+            </div>
+            <p className="text-sm text-gray-500 text-center">
+              Didn't receive the code? <Button variant="link" className="px-1 h-auto text-[#4361EE]">Resend</Button>
+            </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-[#4361EE] hover:bg-[#3651D4] text-white"
               size="lg"
               disabled={loading}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isVerification ? 'Verifying...' : 'Logging in...'}
+                  {isVerification ? 'Verifying...' : 'Signing in...'}
                 </>
               ) : (
-                isVerification ? 'Verify Email' : 'Login'
+                isVerification ? 'Verify Email' : 'Sign In'
               )}
             </Button>
+            
             <Button
               type="button"
-              variant="link"
+              variant="ghost"
               className="w-full"
               onClick={() => {
                 setShowOTPInput(false);
@@ -164,17 +184,18 @@ export function LoginForm() {
               }}
               disabled={loading}
             >
-              Back to email
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
             </Button>
           </div>
         </form>
       )}
 
-      <div className="text-center text-sm text-zinc-500">
+      <div className="text-center text-sm text-gray-500">
         Don't have an account?{' '}
-        <Button
-          variant="link"
-          className="px-0"
+        <Button 
+          variant="link" 
+          className="px-1 h-auto text-[#4361EE]" 
           onClick={() => router.push('/register')}
         >
           Create one now

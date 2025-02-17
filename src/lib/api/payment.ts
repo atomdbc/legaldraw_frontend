@@ -30,6 +30,8 @@ export class PaymentApiError extends Error {
   }
 }
 
+
+
 export const paymentApi = {
   // Payment Management
   async createPayment(data: PaymentCreateRequest): Promise<PaymentResponse> {
@@ -53,6 +55,117 @@ export const paymentApi = {
       });
     }
   },
+
+  async verifyPayment(sessionId: string): Promise<PaymentResponse> {
+    try {
+      const response = await authApi.authenticatedRequest<PaymentResponse>(
+        `${API_BASE_URL}/api/payments/verify/${sessionId}`
+      );
+      console.log('Verification response:', response);
+      return response;
+    } catch (error: any) {
+      throw new PaymentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to verify payment',
+        code: 'VERIFY_PAYMENT_ERROR'
+      });
+    }
+  },
+
+  async cancelSubscription(): Promise<{ message: string }> {
+    try {
+      const response = await authApi.authenticatedRequest<{ message: string }>(
+        `${API_BASE_URL}/api/payments/subscription/cancel`,
+        {
+          method: 'POST'
+        }
+      );
+      return response;
+    } catch (error: any) {
+      throw new PaymentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to cancel subscription',
+        code: 'CANCEL_SUBSCRIPTION_ERROR'
+      });
+    }
+  },
+
+  async cancelSubscriptionImmediately(): Promise<{ message: string }> {
+    try {
+      const response = await authApi.authenticatedRequest<{ message: string }>(
+        `${API_BASE_URL}/api/payments/subscription/cancel-immediately`,
+        {
+          method: 'POST'
+        }
+      );
+      return response;
+    } catch (error: any) {
+      throw new PaymentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to cancel subscription immediately',
+        code: 'CANCEL_SUBSCRIPTION_IMMEDIATE_ERROR'
+      });
+    }
+  },
+
+  async toggleAutoRenewal(): Promise<{ 
+    message: string; 
+    auto_renew: boolean;
+    subscription_status: {
+      id: string;
+      status: string;
+      current_period_end: string;
+      cancel_at_period_end: boolean;
+      auto_renew: boolean;
+    }
+  }> {
+    try {
+      const response = await authApi.authenticatedRequest<{
+        message: string;
+        auto_renew: boolean;
+        subscription_status: {
+          id: string;
+          status: string;
+          current_period_end: string;
+          cancel_at_period_end: boolean;
+          auto_renew: boolean;
+        }
+      }>(
+        `${API_BASE_URL}/api/payments/subscription/toggle-auto-renew`,
+        { method: 'POST' }
+      );
+      
+      console.log('Toggle auto-renewal response:', response);
+      return response;
+    } catch (error: any) {
+      console.error('Toggle auto-renewal error:', error);
+      throw new PaymentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to toggle auto-renewal',
+        code: 'TOGGLE_AUTO_RENEWAL_ERROR'
+      });
+    }
+  },
+
+  async updatePaymentMethod(): Promise<{ client_secret: string; setup_intent_id: string }> {
+    try {
+      const response = await authApi.authenticatedRequest<{ client_secret: string; setup_intent_id: string }>(
+        `${API_BASE_URL}/api/payments/subscription/update-payment-method`,
+        {
+          method: 'POST'
+        }
+      );
+      return response;
+    } catch (error: any) {
+      throw new PaymentApiError({
+        status: error?.error?.status || 500,
+        message: error.message || 'Failed to update payment method',
+        code: 'UPDATE_PAYMENT_METHOD_ERROR'
+      });
+    }
+  },
+
+
 
   async getPaymentHistory(
     skip: number = 0, 

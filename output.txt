@@ -20,10 +20,12 @@
 │   ├── file.svg
 │   ├── globe.svg
 │   ├── logos
-│   │   ├── glg.svg
-│   │   ├── legalcore.svg
-│   │   ├── techlawfirms.svg
-│   │   └── thompson.svg
+│   │   ├── business.svg
+│   │   ├── enterprise.svg
+│   │   ├── fortune.svg
+│   │   ├── sonetz-logo-white.svg
+│   │   ├── sonetz-logo.svg
+│   │   └── startup.svg
 │   ├── mockup.png
 │   ├── next.svg
 │   ├── vercel.svg
@@ -77,6 +79,9 @@
 │   │   ├── layout.tsx
 │   │   ├── not-found.tsx
 │   │   ├── page.tsx
+│   │   ├── payment
+│   │   │   └── [status]
+│   │   │       └── page.tsx
 │   │   ├── quick-documents
 │   │   │   ├── create
 │   │   │   │   └── page.tsx
@@ -173,6 +178,7 @@
 │   │   ├── quick-documents
 │   │   │   └── StepIndicator.tsx
 │   │   └── ui
+│   │       ├── DocumentGenerationState.tsx
 │   │       ├── alert-dialog.tsx
 │   │       ├── alert.tsx
 │   │       ├── avatar.tsx
@@ -241,6 +247,8 @@
 │   │   │   └── locations.ts
 │   │   ├── presets
 │   │   │   └── templates.ts
+│   │   ├── registry
+│   │   │   └── templateRegistry.ts
 │   │   ├── utils
 │   │   │   ├── documentTypes.ts
 │   │   │   └── form.ts
@@ -268,4 +276,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-62 directories, 207 files
+65 directories, 212 files

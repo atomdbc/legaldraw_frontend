@@ -90,7 +90,7 @@ export function DocNavigation({
       <div className="mb-4 px-4">
         <h2 className="text-lg font-semibold">Documentation</h2>
         <p className="text-sm text-muted-foreground">
-          Learn how to use LegalDraw
+          Learn how to use Docwelo
         </p>
       </div>
       

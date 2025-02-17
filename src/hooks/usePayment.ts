@@ -16,7 +16,6 @@ export const usePayment = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Payment Creation and Management
   const createPayment = useCallback(async (data: PaymentCreateRequest) => {
     setIsLoading(true);
     setError(null);
@@ -40,6 +39,130 @@ export const usePayment = () => {
       setIsLoading(false);
     }
   }, [toast]);
+
+  const verifyPayment = useCallback(async (sessionId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await paymentApi.verifyPayment(sessionId);
+      return response;
+    } catch (err: any) {
+      const errorMessage = err.error?.message || 'Failed to verify payment';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const cancelSubscription = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await paymentApi.cancelSubscription();
+      toast({
+        title: "Subscription Cancelled",
+        description: "Your subscription will be cancelled at the end of the billing period."
+      });
+      return response;
+    } catch (err: any) {
+      const errorMessage = err.error?.message || 'Failed to cancel subscription';
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const cancelSubscriptionImmediately = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await paymentApi.cancelSubscriptionImmediately();
+      toast({
+        title: "Subscription Cancelled",
+        description: "Your subscription has been cancelled immediately."
+      });
+      return response;
+    } catch (err: any) {
+      const errorMessage = err.error?.message || 'Failed to cancel subscription';
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const toggleAutoRenewal = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log('Starting toggle auto-renewal');
+      const response = await paymentApi.toggleAutoRenewal();
+      console.log('Got response:', response);
+      
+      // Add explicit console.log for toast
+      console.log('Showing toast...');
+      toast({
+        variant: "default",  // Make sure toast is visible
+        title: response.message || "Auto-Renewal Updated",
+        description: `Auto-renewal has been ${response.auto_renew ? 'enabled' : 'disabled'}.`,
+        duration: 5000  // Show longer for testing
+      });
+      console.log('Toast shown');
+      
+      return response;
+    } catch (err: any) {
+      console.error('Toggle error:', err);
+      const errorMessage = err.error?.message || 'Failed to toggle auto-renewal';
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+        duration: 5000
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const updatePaymentMethod = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await paymentApi.updatePaymentMethod();
+      toast({
+        title: "Payment Method",
+        description: "Please complete the payment method update."
+      });
+      return response;
+    } catch (err: any) {
+      const errorMessage = err.error?.message || 'Failed to update payment method';
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+
 
   const retryPayment = useCallback(async (paymentId: string) => {
     setIsLoading(true);
@@ -207,6 +330,11 @@ export const usePayment = () => {
     isLoading,
     error,
     createPayment,
+    verifyPayment,
+    cancelSubscription,
+    cancelSubscriptionImmediately,
+    toggleAutoRenewal,
+    updatePaymentMethod,
     retryPayment,
     getPaymentHistory,
     getPlans,

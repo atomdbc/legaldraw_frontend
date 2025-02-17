@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Documentation - LegalDraw',
-  description: 'Learn how to use LegalDraw AI for document generation and management'
+  title: 'Documentation - Docwelo',
+  description: 'Learn how to use Docwelo AI for document generation and management'
 };
 
 export default function DocumentationLayout({

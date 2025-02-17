@@ -67,7 +67,7 @@ function GenerationTypeDialog({
               <div>
                 <h3 className="font-semibold">Detailed Generation</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Comprehensive process with advanced legal options. Ideal for legal professionals.
+                  Comprehensive process with advanced options. Ideal for professionals.
                 </p>
               </div>
               <div className="text-xs bg-secondary px-2 py-1 rounded">
