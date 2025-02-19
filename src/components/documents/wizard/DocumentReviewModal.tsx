@@ -28,6 +28,7 @@ import {
   AlertCircle 
 } from "lucide-react";
 import { UpgradePlanModal } from "@/app/settings/modals/UpgradePlanModal";
+import { getJurisdictionById } from "@/lib/config/jurisdictions";
 
 interface DocumentReviewModalProps {
   isOpen: boolean;
@@ -49,6 +50,17 @@ const getBackendDocumentType = (type: string): string => {
     'software': 'SOFTWARE_LICENSE'
   };
   return typeMap[type.toLowerCase()] || type.toUpperCase();
+};
+
+const formatJurisdiction = (jurisdiction: string | null): string => {
+  if (!jurisdiction) return '-';
+  // If the jurisdiction is already a label (contains spaces or is longer than an ID typically would be)
+  if (jurisdiction.includes(' ') || jurisdiction.length > 20) {
+    return jurisdiction;
+  }
+  // Otherwise, try to get the jurisdiction label from the ID
+  const jurisdictionObj = getJurisdictionById(jurisdiction);
+  return jurisdictionObj?.label || jurisdiction;
 };
 
 const formatValue = (key: string, value: any): string => {
@@ -400,7 +412,7 @@ function DocumentGenerationState() {
                                 {party.jurisdiction && (
                                   <div className="text-xs md:text-sm pl-5 md:pl-6">
                                     <span className="text-muted-foreground">Jurisdiction:</span>{' '}
-                                    {party.jurisdiction}
+                                    {formatJurisdiction(party.jurisdiction)}
                                   </div>
                                 )}
                               </div>

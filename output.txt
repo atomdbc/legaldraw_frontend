@@ -20,9 +20,10 @@
 │   ├── file.svg
 │   ├── globe.svg
 │   ├── logos
+│   │   ├── aws.png
 │   │   ├── business.svg
-│   │   ├── enterprise.svg
-│   │   ├── fortune.svg
+│   │   ├── mirosoft_startup.png
+│   │   ├── nvidia.png
 │   │   ├── sonetz-logo-white.svg
 │   │   ├── sonetz-logo.svg
 │   │   └── startup.svg
@@ -276,4 +277,4 @@
 ├── tsconfig.json
 └── yarn.lock
 
-65 directories, 212 files
+65 directories, 213 files

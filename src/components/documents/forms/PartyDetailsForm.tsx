@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from '@/hooks/useLocation';
 import { cn } from "@/lib/utils";
 import { isValidEmail, formatPhone, isValidPhone } from "@/lib/utils/form";
-import { JURISDICTION_GROUPS } from '@/lib/config/jurisdictions';
+import { JURISDICTION_GROUPS, JURISDICTIONS } from '@/lib/config/jurisdictions';
 import { getJurisdictionById, createCustomJurisdiction } from '@/lib/config/jurisdictions';
 import { DEFAULT_LOCATION } from '@/lib/api/locationService';
 
@@ -279,7 +279,7 @@ export function PartyDetailsForm({
                 </div>
 
                 {/* Jurisdiction */}
-<div className="grid gap-2">
+                <div className="grid gap-2">
   <Label className="flex items-center gap-2">
     Jurisdiction
     {errors.jurisdiction && (
@@ -296,8 +296,7 @@ export function PartyDetailsForm({
       />
       <Button onClick={() => {
         if (customJurisdiction.trim()) {
-          const jurisdiction = createCustomJurisdiction(customJurisdiction);
-          onUpdate({ jurisdiction: jurisdiction.id });
+          onUpdate({ jurisdiction: customJurisdiction }); // Send custom jurisdiction directly as label
           setShowCustomJurisdiction(false);
           setCustomJurisdiction('');
         }
@@ -310,20 +309,41 @@ export function PartyDetailsForm({
     </div>
   ) : (
     <Select
-      value={party.jurisdiction || ''}
-      onValueChange={(value) => {
-        if (value === 'custom') {
-          setShowCustomJurisdiction(true);
-        } else {
-          onUpdate({ jurisdiction: value });
+    value={(() => {
+      const currentValue = party.jurisdiction;
+      if (!currentValue) return '';
+      
+      // Try to find a jurisdiction matching this value as an ID
+      const jurisdiction = getJurisdictionById(currentValue);
+      if (jurisdiction) {
+        return jurisdiction.id;
+      }
+      
+      // Try to find a jurisdiction matching this value as a label
+      const jurisdictionByLabel = JURISDICTIONS.find(j => j.label === currentValue);
+      if (jurisdictionByLabel) {
+        return jurisdictionByLabel.id;
+      }
+      
+      // If it's a custom value, return it as is
+      return 'custom';
+    })()}
+    onValueChange={(value) => {
+      if (value === 'custom') {
+        setShowCustomJurisdiction(true);
+      } else {
+        const jurisdiction = getJurisdictionById(value);
+        if (jurisdiction) {
+          onUpdate({ jurisdiction: jurisdiction.label }); // Always send label to backend
         }
-      }}
-    >
-      <SelectTrigger className="h-[42px]">
-        <SelectValue placeholder="Select jurisdiction">
-          {party.jurisdiction ? getJurisdictionById(party.jurisdiction)?.label : "Select jurisdiction"}
-        </SelectValue>
-      </SelectTrigger>
+      }
+    }}
+  >
+    <SelectTrigger className="h-[42px]">
+      <SelectValue placeholder="Select jurisdiction">
+        {party.jurisdiction || "Select jurisdiction"}
+      </SelectValue>
+    </SelectTrigger>
       <SelectContent>
         {/* Popular Jurisdictions */}
         <SelectGroup>

@@ -58,20 +58,12 @@ interface UserPlan {
   plan: Plan;
 }
 
-interface PaymentCreate {
-  amount: number;
-  currency: Currency;
-  plan_id: string | PlanType;
-  payment_type: "subscription" | "one_time";
-  payment_metadata?: Record<string, any>;
-}
-
-// Constants
+// Updated currencies to match exact prices
 const currencies = [
-  { code: Currency.USD, symbol: "$", rate: 1 },
-  { code: Currency.EUR, symbol: "€", rate: 0.92 },
-  { code: Currency.GBP, symbol: "£", rate: 0.79 },
-  { code: Currency.INR, symbol: "₹", rate: 87 } 
+  { code: Currency.USD, symbol: "$", monthlyPrices: [2, 15, 29] },
+  { code: Currency.INR, symbol: "₹", monthlyPrices: [169, 1299, 2399] },
+  { code: Currency.EUR, symbol: "€", monthlyPrices: [2, 14, 26] },
+  { code: Currency.GBP, symbol: "£", monthlyPrices: [2, 12, 22] }
 ];
 
 const features = {
@@ -114,7 +106,7 @@ const features = {
 
 interface PriceConfig {
   type: PlanType;
-  basePrice: number;
+  baseIndex: number;
   description: string;
   icon: React.ComponentType;
   highlight?: boolean;
@@ -123,26 +115,26 @@ interface PriceConfig {
 const priceConfig: PriceConfig[] = [
   {
     type: PlanType.PER_DOCUMENT,
-    basePrice: 1,
+    baseIndex: 0,
     description: "Pay as you go",
     icon: FileText
   },
   {
     type: PlanType.BASIC,
-    basePrice: 15,
+    baseIndex: 1,
     description: "For individuals",
     icon: Star
   },
   {
     type: PlanType.PROFESSIONAL,
-    basePrice: 28,
+    baseIndex: 2,
     description: "For growing teams",
     icon: Zap,
     highlight: true
   },
   {
     type: PlanType.ENTERPRISE,
-    basePrice: 0,
+    baseIndex: -1,
     description: "For large organizations",
     icon: Building2
   }
@@ -171,42 +163,75 @@ export function UpgradePlanModal({
     }
   }, [open]);
 
-  const getPrice = (basePrice: number, type: PlanType) => {
-    let price = basePrice * selectedCurrency.rate;
-    if (type !== PlanType.PER_DOCUMENT && billingCycle === BillingCycle.ANNUAL) {
-      price = price * 12 * 0.8; // 20% annual discount
+  // Get display price (monthly amount, with annual discount if applicable)
+  const getDisplayPrice = (type: PlanType, config: PriceConfig) => {
+    if (config.baseIndex === -1) return "Custom";
+    
+    const basePrice = selectedCurrency.monthlyPrices[config.baseIndex];
+    
+    // For per-document pricing, just show the base price
+    if (type === PlanType.PER_DOCUMENT) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(basePrice);
     }
+    
+    // For subscription plans, show monthly price (with annual discount if applicable)
+    const displayPrice = billingCycle === BillingCycle.ANNUAL 
+      ? basePrice * 0.8  // Show 20% discounted monthly price for annual
+      : basePrice;      // Show regular monthly price
+
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(price);
+    }).format(displayPrice);
   };
 
-  const handleUpgrade = async (type: PlanType, basePrice: number) => {
+  // Get actual payment amount for backend
+  const getActualPaymentAmount = (type: PlanType, config: PriceConfig) => {
+    if (config.baseIndex === -1) return 0;
+    
+    const basePrice = selectedCurrency.monthlyPrices[config.baseIndex];
+    
+    // For per-document, just charge the base price
+    if (type === PlanType.PER_DOCUMENT) {
+      return basePrice;
+    }
+    
+    // For subscription plans, calculate actual annual/monthly charge
+    return billingCycle === BillingCycle.ANNUAL 
+      ? basePrice * 12 * 0.8  // Full annual amount with discount
+      : basePrice;            // Monthly amount
+  };
+
+  const handleUpgrade = async (type: PlanType, config: PriceConfig) => {
     try {
       setLoading(type);
       
-      const finalPrice = basePrice * selectedCurrency.rate;
-      const isSubscription = type !== PlanType.PER_DOCUMENT;
+      if (config.baseIndex === -1) {
+        window.location.href = "mailto:sales@Docwelo.com";
+        return;
+      }
+
+      const paymentAmount = getActualPaymentAmount(type, config);
       
       const paymentData: PaymentCreateRequest = {
-        amount: isSubscription && billingCycle === BillingCycle.ANNUAL 
-          ? finalPrice * 12 * 0.8  // 20% annual discount
-          : finalPrice,
+        amount: paymentAmount,
         currency: selectedCurrency.code,
         plan_id: type,
-        payment_type: isSubscription ? 'subscription' : 'one_time',
+        payment_type: type === PlanType.PER_DOCUMENT ? 'one_time' : 'subscription',
         payment_metadata: {
           billing_cycle: billingCycle,
-          currency_rate: selectedCurrency.rate,
+          price_index: config.baseIndex,
           is_annual: billingCycle === BillingCycle.ANNUAL
         }
       };
   
       const response = await createPayment(paymentData);
       
-      // Check for Stripe session URL in payment metadata
       if (response?.payment_metadata?.checkout_url) {
         window.location.href = response.payment_metadata.checkout_url;
       }
@@ -326,24 +351,25 @@ export function UpgradePlanModal({
                     </div>
 
                     <div>
-                      {config.type === PlanType.ENTERPRISE ? (
+                      {config.baseIndex === -1 ? (
                         <div className="text-xl md:text-2xl font-bold">Custom</div>
                       ) : (
                         <div className="space-y-1">
                           <div className="flex items-baseline gap-1 flex-wrap">
                             <span className="text-2xl md:text-3xl font-bold">
                               {selectedCurrency.symbol}
-                              {getPrice(config.basePrice, config.type)}
+                              {getDisplayPrice(config.type, config)}
                             </span>
                             <span className="text-xs md:text-sm text-gray-500">
                               {config.type === PlanType.PER_DOCUMENT 
                                 ? '/document'
-                                : billingCycle === BillingCycle.ANNUAL ? '/year' : '/month'}
+                                : '/month'}
                             </span>
                           </div>
-                          {config.type !== PlanType.PER_DOCUMENT && billingCycle === BillingCycle.ANNUAL && (
+                          {config.type !== PlanType.PER_DOCUMENT && 
+                           billingCycle === BillingCycle.ANNUAL && (
                             <div className="text-xs md:text-sm text-emerald-600">
-                              {selectedCurrency.symbol}{getPrice(config.basePrice * 0.1, config.type)} per month
+                              Billed annually
                             </div>
                           )}
                         </div>
@@ -368,10 +394,7 @@ export function UpgradePlanModal({
                         config.highlight && "bg-black hover:bg-black/90 text-white"
                       )}
                       disabled={loading === config.type || currentPlan?.plan.name === config.type}
-                      onClick={() => config.type === PlanType.ENTERPRISE 
-                        ? window.location.href = "mailto:sales@Docwelo.com"
-                        : handleUpgrade(config.type, config.basePrice)
-                      }
+                      onClick={() => handleUpgrade(config.type, config)}
                     >
                       {loading === config.type ? (
                         <>

@@ -16,12 +16,12 @@ import {
   ArrowRight
 } from "lucide-react";
 
-// Updated currencies
+// Updated currencies with all 4 options
 const currencies = [
-  { code: "USD", symbol: "$", rate: 1 },
-  { code: "EUR", symbol: "€", rate: 0.92 },
-  { code: "GBP", symbol: "£", rate: 0.79 },
-  { code: "INR", symbol: "₹", rate: 87 },
+  { code: "USD", symbol: "$", monthlyPrices: [2, 15, 29] },
+  { code: "INR", symbol: "₹", monthlyPrices: [169, 1299, 2399] },
+  { code: "EUR", symbol: "€", monthlyPrices: [2, 14, 26] },
+  { code: "GBP", symbol: "£", monthlyPrices: [2, 12, 22] }
 ];
 
 const features = {
@@ -60,14 +60,16 @@ const features = {
 export const Pricing = () => {
   const [isAnnual, setIsAnnual] = useState(true);
   const [currency, setCurrency] = useState(currencies[0]);
-  
-  const getPrice = (basePrice: number) => {
-    const price = basePrice * currency.rate;
+
+  const getPrice = (price: number, isPricePerDocument: boolean = false) => {
+    // Don't apply annual discount to per-document price
+    const finalPrice = isPricePerDocument ? price : (isAnnual ? price * 0.8 : price);
+    
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(price);
+    }).format(finalPrice);
   };
 
   return (
@@ -106,7 +108,7 @@ export const Pricing = () => {
           </div>
 
           {/* Currency Selector */}
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-2 flex-wrap">
             {currencies.map((cur) => (
               <Button
                 key={cur.code}
@@ -137,7 +139,7 @@ export const Pricing = () => {
             </div>
             <div className="mb-6">
               <div className="text-3xl font-bold text-gray-900">
-                {currency.symbol}{getPrice(1)}
+                {currency.symbol}{getPrice(currency.monthlyPrices[0], true)}
               </div>
               <div className="text-gray-600">per document</div>
             </div>
@@ -183,7 +185,7 @@ export const Pricing = () => {
               </div>
               <div className="mb-6">
                 <div className="text-3xl font-bold text-gray-900">
-                  {currency.symbol}{getPrice(isAnnual ? 15 : 19)}
+                  {currency.symbol}{getPrice(currency.monthlyPrices[1])}
                 </div>
                 <div className="text-gray-600">per month</div>
               </div>
@@ -225,7 +227,7 @@ export const Pricing = () => {
               </div>
               <div className="mb-6">
                 <div className="text-3xl font-bold text-gray-900">
-                  {currency.symbol}{getPrice(isAnnual ? 28 : 35)}
+                  {currency.symbol}{getPrice(currency.monthlyPrices[2])}
                 </div>
                 <div className="text-gray-600">per month</div>
               </div>

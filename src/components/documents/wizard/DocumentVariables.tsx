@@ -91,14 +91,17 @@ export function DocumentVariables({
     });
   };
 
-  const handleCustomJurisdictionSubmit = () => {
+  const handleCustomJurisdictionSubmit = (field: JurisdictionField) => {
     if (customJurisdiction.trim()) {
       const jurisdiction = createCustomJurisdiction(customJurisdiction);
       setCustomJurisdictions(prev => ({
         ...prev,
-        [jurisdiction.id]: customJurisdiction
+        [jurisdiction.id]: jurisdiction.label
       }));
-      handleFieldChange({ key: 'governing_law' } as DocumentField, jurisdiction.id);
+      onChange({
+        ...variables,
+        [field.key]: jurisdiction.label
+      });
       setShowCustomJurisdiction(false);
       setCustomJurisdiction('');
     }
@@ -112,7 +115,6 @@ export function DocumentVariables({
     }
   };
 
-  // Field Rendering Components
   const renderJurisdictionField = (field: JurisdictionField) => (
     <div className="w-full">
       {showCustomJurisdiction ? (
@@ -126,7 +128,7 @@ export function DocumentVariables({
             />
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleCustomJurisdictionSubmit} size="sm">
+            <Button onClick={() => handleCustomJurisdictionSubmit(field)} size="sm">
               Add
             </Button>
             <Button 
@@ -140,20 +142,32 @@ export function DocumentVariables({
         </div>
       ) : (
         <Select
-          value={variables[field.key as keyof DocumentVariablesType] as string || ''}
+          value={(() => {
+            const currentValue = variables[field.key as keyof DocumentVariablesType] as string;
+            const jurisdiction = JURISDICTIONS.find(j => j.label === currentValue);
+            const customEntry = Object.entries(customJurisdictions).find(([_, label]) => label === currentValue);
+            return jurisdiction ? jurisdiction.id : (customEntry ? customEntry[0] : '');
+          })()}
           onValueChange={(value) => {
             if (value === 'custom') {
               setShowCustomJurisdiction(true);
             } else {
-              handleFieldChange(field, value);
+              const jurisdiction = getJurisdictionById(value);
+              if (jurisdiction) {
+                onChange({
+                  ...variables,
+                  [field.key]: jurisdiction.label
+                });
+              }
             }
           }}
         >
           <SelectTrigger className={cn(errors[field.id] && "border-destructive")}>
-            <SelectValue placeholder="Select jurisdiction" />
+            <SelectValue>
+              {variables[field.key as keyof DocumentVariablesType] || "Select jurisdiction"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {/* Jurisdiction Groups */}
             {Object.entries(JURISDICTION_GROUPS).map(([group, ids], index) => (
               <SelectGroup key={group}>
                 <SelectLabel className="capitalize">
@@ -173,14 +187,15 @@ export function DocumentVariables({
               </SelectGroup>
             ))}
 
-            {/* Custom Jurisdictions */}
             {Object.keys(customJurisdictions).length > 0 && (
               <>
                 <SelectSeparator />
                 <SelectGroup>
                   <SelectLabel>Custom</SelectLabel>
                   {Object.entries(customJurisdictions).map(([id, label]) => (
-                    <SelectItem key={id} value={id}>{label}</SelectItem>
+                    <SelectItem key={id} value={id}>
+                      {label}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </>
@@ -243,7 +258,6 @@ export function DocumentVariables({
     <div className="w-full">
       <Card>
         <div className="p-6">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h3 className="text-lg font-semibold">Document Variables</h3>
             {PREDEFINED_VALUES[configKey as keyof typeof PREDEFINED_VALUES] && (
@@ -265,7 +279,6 @@ export function DocumentVariables({
             )}
           </div>
 
-          {/* Fields */}
           <div className="space-y-6">
             {fields.map((field) => (
               <div key={field.id} className="space-y-2">
@@ -279,7 +292,6 @@ export function DocumentVariables({
                   )}
                 </Label>
 
-                {/* Field Input */}
                 <div className="w-full">
                   {field.type === 'jurisdiction' ? (
                     renderJurisdictionField(field as JurisdictionField)
@@ -324,7 +336,6 @@ export function DocumentVariables({
                   )}
                 </div>
 
-                {/* Field Error */}
                 {errors[field.id] && (
                   <p className="text-sm text-destructive">
                     {errors[field.id]}
@@ -334,7 +345,6 @@ export function DocumentVariables({
             ))}
           </div>
 
-          {/* Validation Errors */}
           {Object.keys(errors).length > 0 && (
             <Alert variant="destructive" className="mt-6">
               <AlertCircle className="h-4 w-4" />

@@ -7,6 +7,104 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Sparkles, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+const styles = `
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-150px * 3));
+  }
+}
+
+.infinite-scroll-wrapper {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  overflow: hidden;
+  background: white;
+  -webkit-mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+  mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+}
+
+.infinite-scroll {
+  display: flex;
+  gap: 0.5rem;
+  width: calc(150px * 6);
+  animation: scroll 15s linear infinite;
+}
+
+.infinite-scroll:hover {
+  animation-play-state: paused;
+}
+
+.logo-slide {
+  width: 150px;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aws-logo {
+  width: 70px !important;
+  height: auto !important;
+}
+
+@media (max-width: 640px) {
+  .infinite-scroll-wrapper {
+    height: 30px;
+  }
+  .logo-slide {
+    width: 120px;
+  }
+  .aws-logo {
+    width: 55px !important;
+  }
+}
+`;
+
+const LogoScroll = () => {
+  const logos = [
+    {
+      name: "AWS",
+      src: "/logos/aws.png",
+      alt: "AWS Logo",
+      className: "aws-logo"
+    },
+    {
+      name: "NVIDIA",
+      src: "/logos/nvidia.png",
+      alt: "NVIDIA Logo"
+    },
+    {
+      name: "Microsoft",
+      src: "/logos/mirosoft_startup.png",
+      alt: "Microsoft Logo"
+    }
+  ];
+
+  const doubledLogos = [...logos, ...logos];
+
+  return (
+    <div className="infinite-scroll-wrapper">
+      <div className="infinite-scroll">
+        {doubledLogos.map((logo, index) => (
+          <div key={`${logo.name}-${index}`} className="logo-slide">
+            <Image
+              src={logo.src}
+              alt={logo.alt}
+              width={100}
+              height={35}
+              className={`object-contain transition-all duration-300 filter grayscale hover:grayscale-0 opacity-60 hover:opacity-100 ${logo.className || ''}`}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const HeroBackground = () => {
   return (
     <div className="absolute inset-0 -z-10 overflow-hidden">
@@ -23,10 +121,14 @@ export const Hero = () => {
   const router = useRouter();
 
   return (
-    <div className="relative pt-20 lg:pt-24 overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <style jsx global>
+        {styles}
+      </style>
+      
       <HeroBackground />
       
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 py-20 lg:py-24">
         <div className="relative">
           {/* AI Badge */}
           <div className="flex justify-center mb-8">
@@ -38,22 +140,22 @@ export const Hero = () => {
 
           {/* Main Content */}
           <div className="max-w-5xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 text-gray-900">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 sm:mb-8 text-gray-900">
               Stop Wasting Time on Documents
               <span className="block mt-2 bg-gradient-to-r from-[#4361EE] to-blue-500 bg-clip-text text-transparent">
                 Focus on What Matters
               </span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed">
               No more late nights fighting with templates or missing deadlines. 
               Create perfect documents in minutes, every time. Let AI handle the paperwork 
               while you build your dreams.
             </p>
 
             {/* Trust Message */}
-            <div className="mb-8 flex justify-center">
-              <div className="flex items-center gap-3 px-5 py-2 bg-green-50 rounded-full">
+            <div className="mb-6 sm:mb-8 flex justify-center">
+              <div className="flex items-center gap-3 px-4 sm:px-5 py-2 bg-green-50 rounded-full">
                 <div className="flex -space-x-2">
                   {[1, 2, 3].map((index) => (
                     <div key={index} className="w-6 h-6 rounded-full bg-green-100 border-2 border-white flex items-center justify-center">
@@ -68,10 +170,10 @@ export const Hero = () => {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-6 mb-16">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-12 sm:mb-16">
               <Button 
                 size="lg" 
-                className="bg-[#4361EE] text-white hover:bg-[#3651D4] h-14 px-8 rounded-full shadow-lg shadow-blue-500/20"
+                className="bg-[#4361EE] text-white hover:bg-[#3651D4] h-12 sm:h-14 px-6 sm:px-8 rounded-full shadow-lg shadow-blue-500/20"
                 onClick={() => router.push('/register')}
               >
                 Create Your First Document Free
@@ -80,7 +182,7 @@ export const Hero = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 h-14 px-8 rounded-full"
+                className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 h-12 sm:h-14 px-6 sm:px-8 rounded-full"
               >
                 <Play className="mr-2 w-4 h-4" /> See How It Works
               </Button>
@@ -99,32 +201,13 @@ export const Hero = () => {
                 <span className="font-medium">4.9/5 from happy users</span>
               </div>
 
-              {/* Trust Logos */}
-              <div className="flex flex-wrap justify-center gap-12 py-8">
-                {[
-                  { name: "Fortune 500", src: "/logos/fortune.svg" },
-                  { name: "StartupPro", src: "/logos/startup.svg" },
-                  { name: "Business Leaders", src: "/logos/business.svg" },
-                  { name: "Global Enterprises", src: "/logos/enterprise.svg" }
-                ].map((logo, index) => (
-                  <div 
-                    key={index} 
-                    className="relative h-8 w-28 grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-300"
-                  >
-                    <Image
-                      src={logo.src}
-                      alt={`${logo.name} Logo`}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                ))}
-              </div>
+              {/* Logo Scroll */}
+              <LogoScroll />
             </div>
           </div>
 
           {/* Interactive Preview */}
-          <div className="mt-20 max-w-6xl mx-auto">
+          <div className="mt-16 sm:mt-20 w-full max-w-7xl mx-auto">
             <div 
               className="rounded-2xl border border-gray-200 shadow-2xl bg-white overflow-hidden cursor-pointer group relative"
               onClick={() => router.push('/register')}
