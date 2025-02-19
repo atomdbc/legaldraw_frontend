@@ -8,19 +8,10 @@ import { ArrowRight, Sparkles, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const styles = `
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(calc(-150px * 3));
-  }
-}
-
 .infinite-scroll-wrapper {
   position: relative;
   width: 100%;
-  height: 40px;
+  height: 45px;
   overflow: hidden;
   background: white;
   -webkit-mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
@@ -29,8 +20,8 @@ const styles = `
 
 .infinite-scroll {
   display: flex;
-  gap: 0.5rem;
-  width: calc(150px * 6);
+  gap: 1rem;
+  width: calc(180px * 6);
   animation: scroll 15s linear infinite;
 }
 
@@ -39,30 +30,22 @@ const styles = `
 }
 
 .logo-slide {
-  width: 150px;
-  padding: 0.25rem;
+  width: 180px;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.aws-logo {
-  width: 70px !important;
-  height: auto !important;
-}
-
 @media (max-width: 640px) {
   .infinite-scroll-wrapper {
-    height: 30px;
+    height: 35px;
   }
   .logo-slide {
-    width: 120px;
+    width: 140px;
   }
-  .aws-logo {
-    width: 55px !important;
-  }
-}
-`;
+}`;
+
 
 const LogoScroll = () => {
   const logos = [
@@ -70,38 +53,96 @@ const LogoScroll = () => {
       name: "AWS",
       src: "/logos/aws.png",
       alt: "AWS Logo",
-      className: "aws-logo"
+      width: 130,
+      height: 40
     },
     {
       name: "NVIDIA",
       src: "/logos/nvidia.png",
-      alt: "NVIDIA Logo"
+      alt: "NVIDIA Logo",
+      width: 120,
+      height: 40
     },
     {
       name: "Microsoft",
       src: "/logos/mirosoft_startup.png",
-      alt: "Microsoft Logo"
+      alt: "Microsoft Logo",
+      width: 140,
+      height: 40
     }
   ];
 
-  const doubledLogos = [...logos, ...logos];
+  const doubledLogos = [...logos, ...logos, ...logos, ...logos];
 
   return (
-    <div className="infinite-scroll-wrapper">
-      <div className="infinite-scroll">
-        {doubledLogos.map((logo, index) => (
-          <div key={`${logo.name}-${index}`} className="logo-slide">
-            <Image
-              src={logo.src}
-              alt={logo.alt}
-              width={100}
-              height={35}
-              className={`object-contain transition-all duration-300 filter grayscale hover:grayscale-0 opacity-60 hover:opacity-100 ${logo.className || ''}`}
-            />
-          </div>
-        ))}
+    <>
+      <style jsx global>{`
+        @keyframes scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .infinite-scroll-wrapper {
+          position: relative;
+          width: 100%;
+          height: 60px;
+          overflow: hidden;
+          background: white;
+          -webkit-mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+          mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+        }
+
+        .infinite-scroll {
+          display: flex;
+          gap: 2rem;
+          width: fit-content;
+          animation: scroll 30s linear infinite;
+        }
+
+        .infinite-scroll:hover {
+          animation-play-state: paused;
+        }
+
+        .logo-slide {
+          width: 200px;
+          height: 60px;
+          padding: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        @media (max-width: 640px) {
+          .infinite-scroll-wrapper {
+            height: 50px;
+          }
+          .logo-slide {
+            width: 160px;
+            height: 50px;
+          }
+        }
+      `}</style>
+      
+      <div className="infinite-scroll-wrapper">
+        <div className="infinite-scroll">
+          {doubledLogos.map((logo, index) => (
+            <div key={`${logo.name}-${index}`} className="logo-slide">
+              <Image
+                src={logo.src}
+                alt={logo.alt}
+                width={logo.width}
+                height={logo.height}
+                className="object-contain transition-all duration-300 filter grayscale hover:grayscale-0 opacity-60 hover:opacity-100"
+              />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -121,17 +162,70 @@ export const Hero = () => {
   const router = useRouter();
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      <style jsx global>
-        {styles}
-      </style>
+    <div className="relative min-h-[85vh] w-full overflow-hidden bg-white">
+      <style jsx global>{`
+        @keyframes scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .infinite-scroll-wrapper {
+          position: relative;
+          width: 100%;
+          height: 60px;
+          overflow: hidden;
+          background: white;
+          -webkit-mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+          mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+        }
+
+        .infinite-scroll {
+          display: flex;
+          gap: 2rem;
+          width: fit-content;
+          animation: scroll 30s linear infinite;
+        }
+
+        .infinite-scroll:hover {
+          animation-play-state: paused;
+        }
+
+        .logo-slide {
+          width: 200px;
+          height: 60px;
+          padding: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        @media (max-width: 640px) {
+          .infinite-scroll-wrapper {
+            height: 50px;
+          }
+          .logo-slide {
+            width: 160px;
+            height: 50px;
+          }
+        }
+      `}</style>
       
-      <HeroBackground />
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800A_1px,transparent_1px),linear-gradient(to_bottom,#8080800A_1px,transparent_1px)] bg-[size:14px_24px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/90 to-white" />
+        <div className="absolute top-20 -left-20 w-96 h-96 bg-[#4361EE]/10 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob" />
+        <div className="absolute top-40 -right-20 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-blue-50 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-4000" />
+      </div>
       
-      <div className="container mx-auto px-4 py-20 lg:py-24">
-        <div className="relative">
+      <div className="container mx-auto px-4 py-16 lg:py-20">
+        <div className="relative max-w-7xl mx-auto">
           {/* AI Badge */}
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-10">
             <Badge variant="outline" className="px-6 py-2 border-[#4361EE]/20 bg-white/80 backdrop-blur-sm gap-2 text-[#4361EE]">
               <Sparkles className="w-4 h-4" />
               Say Goodbye to Document Stress
@@ -140,21 +234,21 @@ export const Hero = () => {
 
           {/* Main Content */}
           <div className="max-w-5xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 sm:mb-8 text-gray-900">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 sm:mb-10 text-gray-900">
               Stop Wasting Time on Documents
-              <span className="block mt-2 bg-gradient-to-r from-[#4361EE] to-blue-500 bg-clip-text text-transparent">
+              <span className="block mt-3 bg-gradient-to-r from-[#4361EE] to-blue-500 bg-clip-text text-transparent">
                 Focus on What Matters
               </span>
             </h1>
             
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-10 sm:mb-12 max-w-3xl mx-auto leading-relaxed">
               No more late nights fighting with templates or missing deadlines. 
               Create perfect documents in minutes, every time. Let AI handle the paperwork 
               while you build your dreams.
             </p>
 
             {/* Trust Message */}
-            <div className="mb-6 sm:mb-8 flex justify-center">
+            <div className="mb-8 sm:mb-10 flex justify-center">
               <div className="flex items-center gap-3 px-4 sm:px-5 py-2 bg-green-50 rounded-full">
                 <div className="flex -space-x-2">
                   {[1, 2, 3].map((index) => (
@@ -170,7 +264,7 @@ export const Hero = () => {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-12 sm:mb-16">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-14 sm:mb-16">
               <Button 
                 size="lg" 
                 className="bg-[#4361EE] text-white hover:bg-[#3651D4] h-12 sm:h-14 px-6 sm:px-8 rounded-full shadow-lg shadow-blue-500/20"
@@ -189,7 +283,7 @@ export const Hero = () => {
             </div>
 
             {/* Social Proof */}
-            <div className="flex flex-col items-center space-y-6">
+            <div className="flex flex-col items-center space-y-8">
               <div className="text-sm text-gray-500 flex items-center gap-4">
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -201,29 +295,31 @@ export const Hero = () => {
                 <span className="font-medium">4.9/5 from happy users</span>
               </div>
 
-              {/* Logo Scroll */}
-              <LogoScroll />
+              {/* Logo Scroll with padding */}
+              <div className="w-full pt-4">
+                <LogoScroll />
+              </div>
             </div>
           </div>
 
-          {/* Interactive Preview */}
-          <div className="mt-16 sm:mt-20 w-full max-w-7xl mx-auto">
+           {/* Interactive Preview */}
+           <div className="mt-12 sm:mt-16 lg:mt-24 w-full">
             <div 
               className="rounded-2xl border border-gray-200 shadow-2xl bg-white overflow-hidden cursor-pointer group relative"
               onClick={() => router.push('/register')}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#4361EE] text-white px-6 py-3 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#4361EE] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 text-sm sm:text-base">
                   Start Creating — It's Free
                 </span>
               </div>
-              <ScrollArea className="h-[500px]">
+              <ScrollArea className="h-[250px] sm:h-[300px] lg:h-[400px]">
                 <Image
                   src="/mockup.png"
-                  alt="Docwelo - Create Perfect Documents in Minutes"
-                  width={1920}
-                  height={1080}
-                  className="w-full h-auto object-cover"
+                  alt="LegalDraw Dashboard Interface"
+                  width={1200}
+                  height={675}
+                  className="w-full h-auto object-cover rounded-lg"
                   priority
                 />
               </ScrollArea>
